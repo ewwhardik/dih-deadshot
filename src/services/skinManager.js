@@ -11,7 +11,9 @@ const {
 } = require("../data/deadshotCatalog");
 
 const BROWSER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36";
+
+const EQUIPPED_SKIN_RE = /^skins\/compressed\/([a-z0-9]+?)(ar|smg|awp|shotgun|dmr|pistol|lmg)([0-4]?)\.webp$/i;
 
 function sanitizeSkinName(rawName) {
   return String(rawName || "custom-skin")
@@ -36,7 +38,9 @@ class SkinManagerService {
     this.appSwapDir = path.join(appRoot, "swap");
     this.assetCacheDir = path.join(userDataPath, "asset-cache");
     this.appAssetsDir = path.join(appRoot, "assets");
+    this.swapIndex = new Map();
     this.ensureDirectories();
+    this.rescanSwapIndex();
   }
 
   ensureDirectories() {
@@ -144,6 +148,34 @@ class SkinManagerService {
     return { ok: true };
   }
 
+  rescanSwapIndex() {
+    this.swapIndex = new Map();
+    const indexDir = (rootDir, rootKey) => {
+      if (!fs.existsSync(rootDir)) return;
+      const walk = (dir) => {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            walk(full);
+          } else {
+            const rel = path.relative(rootDir, full).replace(/\\/g, "/");
+            const url = `custom://dih/${rootKey}/${rel.split("/").map(encodeURIComponent).join("/")}`;
+            const relLower = rel.toLowerCase();
+            const baseLower = entry.name.toLowerCase();
+            const rec = { relativePath: rel, source: rootKey === "user-swap" ? "user" : "builtin", url };
+            this.swapIndex.set(relLower, rec);
+            this.swapIndex.set(baseLower, rec);
+          }
+        }
+      };
+      walk(rootDir);
+    };
+    indexDir(this.appSwapDir, "app-swap");
+    indexDir(this.userSwapDir, "user-swap");
+    return this.listSwapFiles();
+  }
+
   listSwapFiles() {
     const found = [];
     const walk = (rootDir, source) => {
@@ -167,6 +199,13 @@ class SkinManagerService {
   _findSwapFile(relPath) {
     const cleanRel = String(relPath || "").replace(/^\/+/, "").replace(/\.\./g, "");
     if (!cleanRel) return null;
+
+    const cleanLower = cleanRel.toLowerCase();
+    const directHit = this.swapIndex.get(cleanLower);
+    if (directHit) return directHit.url;
+
+    const baseHit = this.swapIndex.get(path.posix.basename(cleanLower));
+    if (baseHit) return baseHit.url;
 
     const userCandidate = path.join(this.userSwapDir, cleanRel);
     if (isWithinDir(this.userSwapDir, userCandidate) && fs.existsSync(userCandidate)) {
@@ -254,6 +293,39 @@ class SkinManagerService {
               matchedType: "weapon_official",
               weaponId,
             };
+          }
+        }
+      }
+    }
+
+    // 1b. Override equipped in-game skins (skins/compressed/<skinId><weaponId><0-4>.webp)
+    if (skinCfg.overrideEquippedGameSkin !== false) {
+      const m = EQUIPPED_SKIN_RE.exec(reqPath);
+      if (m) {
+        const matchedWeapon = m[2].toLowerCase();
+        const cfg = weaponsCfg[matchedWeapon];
+        if (cfg && cfg.mode === "custom" && cfg.customFile) {
+          const safeFile = path.basename(cfg.customFile);
+          const diskPath = path.join(this.customSkinsDir, safeFile);
+          if (isWithinDir(this.customSkinsDir, diskPath) && fs.existsSync(diskPath)) {
+            return {
+              redirectURL: `custom://dih/custom-skins/${encodeURIComponent(safeFile)}`,
+              matchedType: "weapon_custom_override",
+              weaponId: matchedWeapon,
+            };
+          }
+        } else if (cfg && cfg.mode === "official" && cfg.officialId && cfg.officialId !== "default") {
+          const validOfficial = OFFICIAL_SKINS.some((s) => s.id === cfg.officialId);
+          if (validOfficial) {
+            const targetUrl = buildOfficialSkinUrl(cfg.officialId, matchedWeapon, Number(cfg.wear) || 0);
+            const targetPath = new URL(targetUrl).pathname.replace(/^\/+/, "");
+            if (reqPath !== targetPath) {
+              return {
+                redirectURL: targetUrl,
+                matchedType: "weapon_official_override",
+                weaponId: matchedWeapon,
+              };
+            }
           }
         }
       }

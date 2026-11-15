@@ -1,0 +1,30 @@
+DIH CLIENT — PROPRIETARY ALL-RIGHTS-RESERVED LICENSE
+Copyright (c) 2026 ewwhardik. All Rights Reserved.
+
+Permission Notice:
+The source code, native Rust host, injected client modules, 3D Studio, Aim Trainer,
+custom UI assets, documentation source, build scripts, and compiled binaries of
+"Dih Client" ("Software") are the exclusive proprietary intellectual property of
+ewwhardik (GitHub: https://github.com/ewwhardik/dih-deadshot).
+
+STRICTLY PROHIBITED WITHOUT PRIOR WRITTEN AUTHORIZATION FROM ewwhardik:
+1. No Copying or Reproduction: You may NOT copy, duplicate, clone for redistribution,
+   republish, mirror, or upload any portion of the Software or its source code.
+2. No Redistribution or Sublicensing: You may NOT redistribute, sell, rent, lease,
+   lend, host, bundle, or rebrand the Software (in source or binary form), in whole
+   or in part, whether free or commercial.
+3. No Modification or Derivative Works: You may NOT modify, adapt, fork for release,
+   fork-rebrand, translate, or create derivative works based on the Software.
+4. No Decompilation or Extraction: You may NOT reverse engineer, decompile, unpack,
+   extract embedded bundles/resources from compiled executables, or strip copyright
+   notices, authorship attribution, or license terms from the Software.
+
+LIMITED PERSONAL EXECUTION GRANT:
+End users may download official unmodified releases distributed directly by
+ewwhardik from https://github.com/ewwhardik/dih-deadshot solely for personal,
+non-commercial execution on their own computing devices.
+
+WARRANTY DISCLAIMER:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+IN NO EVENT SHALL ewwhardik BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM THE USE OF OR INABILITY TO USE THE SOFTWARE.

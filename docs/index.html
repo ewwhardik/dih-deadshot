@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dih Client — Uncapped High-FPS Deadshot.io Client (Windows, macOS & Linux)</title>
-  <meta name="description" content="Dih Client v0.3: 1.7–15 MB Native Rust+Win32 & cross-platform Deadshot.io client with 196+ features, PC Power Auto-Tune, 3D Skin Studio, Corsair RGB, and uncapped FPS." />
+  <meta name="description" content="Dih Client v0.4: 975 KB Sub-1MB Single-Binary Rust+Win32 & cross-platform Deadshot.io client with Titanium Grey-White Bento UI, Royal Flush GLSL skin baker, 7-Gun Aim Trainer, zero-leak adblocker, Minimal/Complete HUD & uncapped FPS." />
   <link rel="icon" type="image/png" href="assets/dih-icon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -15,16 +15,17 @@
         <img src="assets/dih-icon.png" alt="Dih Icon" width="28" height="28" class="brand-icon" />
         <div class="brand-text">
           <span class="brand-name">DIH CLIENT</span>
-          <span class="brand-tag mono" id="nav-version">v0.3.0 • 196 FEATURES</span>
+          <span class="brand-tag mono" id="nav-version">v0.4.0 • 201 FEATURES</span>
         </div>
       </a>
       <nav class="nav-links">
+        <a href="#ui-showcase">Bento Glass UI</a>
         <a href="#benchmarks">Chrome vs Dih</a>
         <a href="#analyzer">PC Analyzer</a>
         <a href="#playground">Live Previews</a>
         <a href="#rgb-skins">RGB & Skins</a>
         <a href="#features">All Features</a>
-        <a href="#downloads" class="btn primary small">Download v0.3</a>
+        <a href="#downloads" class="btn primary small">Download v0.4</a>
       </nav>
     </div>
   </header>
@@ -33,23 +34,23 @@
     <!-- Hero -->
     <section class="hero container">
       <div class="hero-copy">
-        <div class="pill mono">NATIVE RUST + WIN32 (WINDOWS) • ELECTRON (MACOS & LINUX)</div>
-        <h1>Uncapped FPS.<br /><span class="accent-grad">1.7 MB Host Shell.</span></h1>
+        <div class="pill mono">SUB-1 MB SINGLE-FILE BINARY • NATIVE WIN32 + MACOS &amp; LINUX</div>
+        <h1>Uncapped FPS.<br /><span class="accent-grad">975 KB Single-File Shell.</span></h1>
         <p class="lead">
-          Engineered from the ground up to eliminate browser bloat, Windows Efficiency Mode throttling,
-          and compositor lag. Probes your real CPU, GPU, RAM &amp; Display Hz on boot, automatically tunes
-          optimal client settings, and ships <strong><span id="hero-feat-count">196</span> wired esports features</strong>
+          Titanium grey-white frosted-glass Bento UI meets a <strong>975 KB (<code>&lt; 1 MB</code>)</strong> single-executable Rust + C + Win32 engine
+          with zero loose code files, zero-leak Venatus/Atmtd adblocker, Minimal &amp; Complete telemetry (<code>F6</code>), F1–F9 HUD hide keys,
+          Auto-Join chat, 7-Gun Aim Trainer (<code>Insert</code>), Royal Flush GLSL shader skin packs, and <strong><span id="hero-feat-count">201</span> wired features</strong>
           by <span class="mono">ewwhardik</span>.
         </p>
         <div class="hero-cta">
-          <a href="#downloads" class="btn primary">Download v0.3 (Win / Mac / Linux)</a>
-          <a href="#analyzer" class="btn">Try PC Power Analyzer</a>
+          <a href="#downloads" class="btn primary">Download v0.4 (Win / Mac / Linux)</a>
+          <a href="#ui-showcase" class="btn">Preview v0.4 Glass UI</a>
           <a href="https://github.com/ewwhardik/dih-deadshot" target="_blank" rel="noopener" class="btn">GitHub Repo</a>
         </div>
         <div class="hero-stats mono">
-          <div class="stat-pill"><span class="k">IDLE HOST RAM</span><strong>1.7 MB</strong></div>
+          <div class="stat-pill"><span class="k">SINGLE EXE SIZE</span><strong>975 KB (&lt;1MB)</strong></div>
           <div class="stat-pill"><span class="k">CHROME (22 PROCS)</span><strong>1,652.3 MB</strong></div>
-          <div class="stat-pill"><span class="k">WIRED FEATURES</span><strong id="hero-stat-feats">196+</strong></div>
+          <div class="stat-pill"><span class="k">WIRED FEATURES</span><strong id="hero-stat-feats">201+</strong></div>
           <div class="stat-pill"><span class="k">PLATFORMS</span><strong>WIN • MAC • LINUX</strong></div>
         </div>
       </div>
@@ -83,8 +84,36 @@
             </svg>
           </div>
           <div class="mock-bottom-bar mono">
-            <span>Max Compute Profile • EcoQoS OFF</span>
-            <span>[RightShift] Menu</span>
+            <span>Max Compute • 975 KB Single EXE</span>
+            <span>[RightShift] Bento Menu • [Insert] Aim Trainer</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- New v0.4 Live Titanium Glass UI Showcase -->
+    <section id="ui-showcase" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">DIH v0.4 OVERHAUL • TITANIUM GREY-WHITE GLASS</span>
+        <h2>Bento Glass Command Center, Royal Flush Shaders &amp; 7-Gun Aim Trainer</h2>
+        <p class="sub">
+          Redesigned around frosted Titanium grey-white glass cards, sparklines, concentric GPU gauges,
+          one-click Royal Flush <code>.frag</code> UV baking across all 7 guns, Minimal/Complete telemetry (<code>F6</code>), F1–F9 individual HUD toggles, and Auto-Join chat (<code>"Dih User Joined"</code>).
+        </p>
+      </div>
+      <div class="bento-gallery">
+        <div class="card bento-shot">
+          <img src="assets/bento-dashboard-v04.png" alt="Dih Client v0.4 Titanium Grey-White Bento Command Center" />
+          <div class="bento-cap mono">
+            <span>LIVE COMMAND CENTER • DASHBOARD BENTO</span>
+            <span>FPS SPARKLINES • POWER RING • QUICK TILES</span>
+          </div>
+        </div>
+        <div class="card bento-shot">
+          <img src="assets/bento-skins-v04.png" alt="Dih Client v0.4 Royal Flush Shader Baker & 7-Gun Skin Packs" />
+          <div class="bento-cap mono">
+            <span>SKIN PACKS &amp; STUDIO • .FRAG SHADER BAKER</span>
+            <span>ROYAL FLUSH • CUSTOM 7-GUN PACK BUILDER</span>
           </div>
         </div>
       </div>
@@ -128,10 +157,10 @@
       <div class="bench-proof card" style="margin-top: 18px;">
         <div class="proof-top">
           <div>
-            <h3>Verified Clean Native Executable (0 / 13 Malware Detections)</h3>
-            <p class="muted">1.14 MB PE32+ Rust+C native binary scanned independently on Jotti across Avast, Bitdefender, Kaspersky, Trend Micro, Fortinet &amp; more — 0 detections.</p>
+            <h3>Clean Security Posture &amp; VirusTotal / Defender Hardening (v0.4)</h3>
+            <p class="muted">Single-file <code>998,912 B</code> (975.5 KB) PE32+ executable with <code>asInvoker</code> Win32 <code>RT_MANIFEST</code>, Windows 10/11 compatibility GUIDs, zero <code>PROCESS_VM_READ</code>, zero UPX packing, <code>0</code> Windows Defender threats, and verified <code>0 / 13</code> Jotti multi-engine scan (MD5 <code>c7581cfe07c344200b90146da8d51597</code>).</p>
           </div>
-          <span class="badge accent mono">0 / 13 SCANNERS CLEAN</span>
+          <span class="badge accent mono">975 KB • CLEAN PE32+</span>
         </div>
         <div class="proof-img-wrap">
           <img src="assets/jotti-scan-clean.png" alt="Jotti Malware Scan Report for Dih.exe: 0 of 13 scanners reported malware" />
@@ -143,17 +172,17 @@
           <thead>
             <tr>
               <th>Capability / Architecture</th>
-              <th class="col-dih">Dih Client v0.3</th>
+              <th class="col-dih">Dih Client v0.4</th>
               <th>Typhoonz0 / Omniverse</th>
               <th>Google Chrome Browser</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Native Core Runtime</td>
-              <td class="col-dih"><strong>Rust + C + Win32 + WebView2</strong> (Win) + macOS/Linux Electron</td>
-              <td>Electron Wrapper (Windows-oriented JS shell)</td>
-              <td>Multi-Process Desktop Browser (20+ processes)</td>
+              <td>Distributable Size &amp; Code Packaging</td>
+              <td class="col-dih"><strong>975 KB (<code>&lt; 1 MB</code>) single <code>Dih.exe</code></strong> — zero loose JS/HTML files visible</td>
+              <td>~120+ MB unpacked Electron resources</td>
+              <td>~350+ MB multi-process browser install</td>
             </tr>
             <tr>
               <td>Observed Shell Overhead</td>
@@ -162,44 +191,38 @@
               <td>1,652.3 MB (Task Manager capture, 22 processes)</td>
             </tr>
             <tr>
-              <td>Windows 11 EcoQoS & Timer Bypass</td>
-              <td class="col-dih"><strong>Full Tree Bypass + timeBeginPeriod(1) + P-Core Affinity</strong></td>
-              <td>Limited Chromium switches only</td>
-              <td>Throttled by Windows Efficiency Mode (Green Leaf)</td>
+              <td>Ad &amp; Venatus (<code>vntsm</code> / <code>atmtd</code>) Blocker</td>
+              <td class="col-dih"><strong>Zero-Leak COM Filter + DOM/CSS Shield</strong> (blocks Venatus, Prebid &amp; Atmtd banners)</td>
+              <td>Basic static block rules</td>
+              <td>Extensions add extra per-tab RAM</td>
             </tr>
             <tr>
-              <td>First-Boot PC Power Analyzer & Auto-Tune</td>
-              <td class="col-dih"><strong>Animated Phase + 0–100 Score + Auto-Config</strong></td>
+              <td>Skin Changer &amp; Official Editor Parity</td>
+              <td class="col-dih"><strong>O(1) Swapper + Royal Flush <code>.frag</code> Shader Baker + Custom 7-Gun Pack Builder</strong></td>
+              <td>Static file swapper</td>
               <td>None</td>
+            </tr>
+            <tr>
+              <td>Per-Gun Aim Trainer (<code>Insert</code>)</td>
+              <td class="col-dih"><strong>7 Calibrated Weapons (AR, AK, SMG, Shotgun, Sniper, Deagle, Pistol)</strong></td>
+              <td>None</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td>Telemetry Modes, Hides &amp; Auto-Chat</td>
+              <td class="col-dih"><strong>Minimal / Complete (<code>F6</code>), F1–F9 HUD Hides &amp; <code>"Dih User Joined"</code> Chat</strong></td>
+              <td>Basic FPS counter only</td>
               <td>None</td>
             </tr>
             <tr>
               <td>Verified Wired Features</td>
-              <td class="col-dih"><strong>196+ Features</strong> (Net-Graph, Black-EQ, DPR Scaler, Favorites)</td>
-              <td>Basic launcher, swapper & simple crosshairs</td>
+              <td class="col-dih"><strong>201+ Features</strong> (Titanium Bento Glass, Net-Graph, Black-EQ, Corsair 6×22 RGB)</td>
+              <td>Basic launcher, swapper &amp; simple crosshairs</td>
               <td>0 native game client features</td>
             </tr>
             <tr>
-              <td>Custom 3D Skin Studio (.GLB + UV Paint)</td>
-              <td class="col-dih"><strong>Built-in Offline Three.js + Draco + Layer Brushes</strong></td>
-              <td>Basic static file replacement only</td>
-              <td>None</td>
-            </tr>
-            <tr>
-              <td>Corsair iCUE / OpenRGB / WebHID 6×22 LED</td>
-              <td class="col-dih"><strong>Real-time 6×22 Matrix + Reactive Firing/ADS/Ping</strong></td>
-              <td>None</td>
-              <td>None</td>
-            </tr>
-            <tr>
-              <td>WebView2 Com/Ad-Filter Efficiency</td>
-              <td class="col-dih"><strong>Targeted Domain + Game Filter (Zero "*" COM Stalls)</strong></td>
-              <td>Broad Electron interceptor</td>
-              <td>Extensions add extra per-tab RAM</td>
-            </tr>
-            <tr>
-              <td>Cross-Platform Availability</td>
-              <td class="col-dih"><strong>Windows (Native + Electron) • macOS • Linux</strong></td>
+              <td>Cross-Platform &amp; License</td>
+              <td class="col-dih"><strong>Windows (975 KB + Electron) • macOS • Linux</strong> • Proprietary License</td>
               <td>Desktop Electron</td>
               <td>Cross-platform browser</td>
             </tr>
@@ -415,13 +438,13 @@
     <section id="features" class="section container">
       <div class="section-head">
         <span class="kicker mono">FULL CLIENT CAPABILITIES EXPLORER</span>
-        <h2>Every Single Wired Feature (<span id="catalog-count">196</span>)</h2>
+        <h2>Every Single Wired Feature (<span id="catalog-count">201</span>)</h2>
         <p class="sub">Search or filter through the live feature registry bundled directly inside Dih Client.</p>
       </div>
 
       <div class="card catalog-shell">
         <div class="catalog-toolbar">
-          <input type="search" id="feat-search" placeholder="Search 196+ features (e.g. Black Equalizer, P-Core, Net-Graph, DoH, GLB, EcoQoS)..." />
+          <input type="search" id="feat-search" placeholder="Search 201+ features (e.g. Aim Trainer, Royal Flush, Minimal HUD, Venatus, Auto Chat)..." />
           <label class="chk mono"><input type="checkbox" id="feat-restart-only" /> Boot / Restart Flags Only</label>
         </div>
         <div class="cat-chips" id="cat-chips"></div>
@@ -432,43 +455,42 @@
     <!-- Section 6: Downloads (Windows, macOS, Linux) -->
     <section id="downloads" class="section container">
       <div class="section-head">
-        <span class="kicker mono">CROSS-PLATFORM RELEASE • v0.3.0</span>
+        <span class="kicker mono">CROSS-PLATFORM RELEASE • v0.4.0</span>
         <h2>Download Dih Client for Windows, macOS &amp; Linux</h2>
       </div>
 
       <div class="grid-3">
         <div class="card dl-card">
-          <div class="os-badge mono">WINDOWS x64 • FLAGSHIP</div>
+          <div class="os-badge mono">WINDOWS x64 • SUB-1 MB FLAGSHIP</div>
           <h3>Native Rust + Win32 + WebView2</h3>
-          <p class="muted">1.7–15 MB host shell, Win32 Priority Boost, EcoQoS bypass, P-Core affinity, TimeBeginPeriod(1) &amp; embedded WebView2.</p>
+          <p class="muted">975 KB (<code>998,912 B</code>) single-binary <code>Dih.exe</code> with zero loose code files, Win32 <code>asInvoker</code> manifest, EcoQoS bypass &amp; WebView2.</p>
           <ul class="dl-list mono">
-            <li>Dih-Client-v0.3-win-x64.zip</li>
-            <li>No external Node/Chromium bloat</li>
+            <li>Dih-Client-v0.4-win-x64.zip</li>
+            <li>Dih-Client-v0.4.0-electron-win-x64.zip</li>
           </ul>
-          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3" target="_blank" rel="noopener" class="btn primary full">Download Windows v0.3</a>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4" target="_blank" rel="noopener" class="btn primary full">Download Windows v0.4</a>
         </div>
 
         <div class="card dl-card">
-          <div class="os-badge mono">MACOS • APPLE SILICON &amp; INTEL</div>
-          <h3>Dih Client for macOS (.dmg / .zip)</h3>
-          <p class="muted">Metal GPU ANGLE acceleration, ProMotion 120Hz detection via system_profiler, OpenRGB &amp; Full 3D Skin Studio.</p>
+          <div class="os-badge mono">MACOS • ARM64 &amp; INTEL x64</div>
+          <h3>Dih Client for macOS (.zip / App)</h3>
+          <p class="muted">Metal GPU ANGLE acceleration, ProMotion 120Hz detection, OpenRGB, 7-Gun Aim Trainer &amp; Royal Flush 3D Studio.</p>
           <ul class="dl-list mono">
-            <li>Dih-Client-0.3.0-mac-arm64.dmg</li>
-            <li>Dih-Client-0.3.0-mac-x64.dmg</li>
+            <li>Dih-Client-0.4.0-mac-arm64.zip</li>
+            <li>Dih-Client-0.4.0-mac-x64.zip</li>
           </ul>
-          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3" target="_blank" rel="noopener" class="btn full">Download macOS v0.3</a>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4" target="_blank" rel="noopener" class="btn full">Download macOS v0.4</a>
         </div>
 
         <div class="card dl-card">
-          <div class="os-badge mono">LINUX x64 • APPIMAGE / DEB</div>
-          <h3>Dih Client for Linux</h3>
-          <p class="muted">Vulkan &amp; OpenGL backend support, xrandr/lspci telemetry, OpenRGB / ckb-next Corsair detection &amp; full overlay HUD.</p>
+          <div class="os-badge mono">LINUX x64 • PORTABLE BUNDLE</div>
+          <h3>Dih Client for Linux (.tar.gz)</h3>
+          <p class="muted">Vulkan &amp; OpenGL backend support, xrandr/lspci telemetry, OpenRGB / ckb-next Corsair sync &amp; full overlay HUD.</p>
           <ul class="dl-list mono">
-            <li>Dih-Client-0.3.0-linux-x64.AppImage</li>
-            <li>Dih-Client-0.3.0-linux-x64.deb</li>
-            <li>Dih-Client-0.3.0-linux-x64.tar.gz</li>
+            <li>Dih-Client-0.4.0-linux-x64.tar.gz</li>
+            <li>Dih-Client-0.4.0-linux-x64.zip</li>
           </ul>
-          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3" target="_blank" rel="noopener" class="btn full">Download Linux v0.3</a>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4" target="_blank" rel="noopener" class="btn full">Download Linux v0.4</a>
         </div>
       </div>
     </section>
@@ -478,7 +500,7 @@
     <div class="footer-inner">
       <div class="brand">
         <img src="assets/dih-icon.png" alt="Dih Icon" width="24" height="24" />
-        <span><strong>Dih Client</strong> — Created &amp; maintained by <strong>ewwhardik</strong></span>
+        <span><strong>Dih Client v0.4</strong> — Proprietary License © 2026 <strong>ewwhardik</strong></span>
       </div>
       <div class="footer-links mono">
         <a href="https://github.com/ewwhardik/dih-deadshot" target="_blank" rel="noopener">GitHub: ewwhardik/dih-deadshot</a>

@@ -21,9 +21,11 @@ const {
 const { THEME_PRESETS } = require("./data/defaultSettings");
 const {
   WEAPONS,
+  WEAPON_BALLISTICS,
   MELEE_AND_UTILITY_MODELS,
   OFFICIAL_SKINS,
   SHADER_SKINS,
+  DIH_SKIN_PACKS,
   CHARACTER_ASSETS,
   ENVIRONMENT_AND_UI_ASSETS,
   MAPS,
@@ -184,8 +186,87 @@ function getMimeType(filePath) {
   return map[ext] || "application/octet-stream";
 }
 
+const AD_BLOCKED_HOSTS = [
+  "vntsm.com",
+  "vntsm.io",
+  "venatusmedia.com",
+  "atmtd.com",
+  "googlesyndication.com",
+  "doubleclick.net",
+  "googleadservices.com",
+  "google-analytics.com",
+  "googletagmanager.com",
+  "adnxs.com",
+  "rubiconproject.com",
+  "pubmatic.com",
+  "openx.net",
+  "casalemedia.com",
+  "criteo.com",
+  "criteo.net",
+  "amazon-adsystem.com",
+  "prebid.org",
+  "scorecardresearch.com",
+  "quantserve.com",
+  "taboola.com",
+  "outbrain.com",
+  "sharethrough.com",
+  "3lift.com",
+  "smartadserver.com",
+  "indexww.com",
+  "adsrvr.org",
+  "demdex.net",
+  "krxd.net",
+  "lijit.com",
+  "bidswitch.net",
+  "id5-sync.com",
+  "adingo.jp",
+  "adsystem.com",
+  "gumgum.com",
+  "media.net",
+  "undertone.com",
+  "teads.tv",
+  "yellowblue.io",
+  "clean.gg",
+];
+
+function isBlockedAdUrl(rawUrl) {
+  try {
+    const u = new URL(rawUrl);
+    const host = u.hostname.toLowerCase();
+    for (const bad of AD_BLOCKED_HOSTS) {
+      if (host === bad || host.endsWith("." + bad)) return true;
+    }
+    const lower = (host + u.pathname).toLowerCase();
+    return (
+      lower.includes("/prebid") ||
+      lower.includes("vntsm.") ||
+      lower.includes("/pagead/") ||
+      lower.includes("hb.js")
+    );
+  } catch {
+    return false;
+  }
+}
+
 function setupCustomProtocol() {
   protocol.handle("custom", async (request) => {
+    try {
+      const u = new URL(request.url);
+      const segs = decodeURIComponent(u.pathname).replace(/^\/+/, "").split("/").filter(Boolean);
+      if (segs[0] === "__ad_stub__") {
+        const stubType = segs[1] || "empty.js";
+        if (stubType === "empty.json") {
+          return new Response("{}", {
+            status: 200,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          });
+        }
+        return new Response("/* blocked */", {
+          status: 200,
+          headers: { "Content-Type": "application/javascript", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    } catch {}
     const resolved = skinManager.resolveCustomProtocolPath(request.url);
     if (!resolved) {
       return new Response("Not Found", {
@@ -231,8 +312,19 @@ function setupSessionPipeline(ses) {
       return callback({ redirectURL: swap.redirectURL });
     }
 
-    if (liveSettings.window?.adblockerEnabled && adBlocker) {
-      return adBlocker.onBeforeRequest(details, callback);
+    if (liveSettings.window?.adblockerEnabled) {
+      if (isBlockedAdUrl(details.url)) {
+        if (details.resourceType === "script") {
+          return callback({ redirectURL: "custom://dih/__ad_stub__/empty.js" });
+        }
+        if (details.resourceType === "xhr" || details.resourceType === "fetch") {
+          return callback({ redirectURL: "custom://dih/__ad_stub__/empty.json" });
+        }
+        return callback({ cancel: true });
+      }
+      if (adBlocker) {
+        return adBlocker.onBeforeRequest(details, callback);
+      }
     }
 
     return callback({});
@@ -282,6 +374,8 @@ function buildInjectedRendererScript() {
     "filterEngine.js",
     "corsairReactive.js",
     "leaderboardModal.js",
+    "autoChat.js",
+    "../studio/shaderBaker.js",
     "commandCenter.js",
     "overlayMain.js",
   ];
@@ -415,7 +509,10 @@ function createMainWindow() {
       mainWindow.webContents.toggleDevTools();
     } else if (input.key === "F7") {
       event.preventDefault();
-      openStudioWindow("painter");
+      openStudioWindow({ tab: "painter" });
+    } else if (input.key === "Insert") {
+      event.preventDefault();
+      openStudioWindow({ tab: "aimtrainer" });
     } else if (input.key === "F8") {
       event.preventDefault();
       const nextMute = !Boolean(settingsStore.settings.audio?.masterMuted);
@@ -475,11 +572,15 @@ function createMainWindow() {
   });
 }
 
-function openStudioWindow(initialTab = "painter") {
+function openStudioWindow(targetArg = "painter") {
+  const isObj = targetArg && typeof targetArg === "object";
+  const initialTab = isObj ? (targetArg.tab || "painter") : String(targetArg || "painter");
+  const targetWeapon = isObj && targetArg.weapon ? String(targetArg.weapon) : "";
+
   if (studioWindow && !studioWindow.isDestroyed()) {
     studioWindow.show();
     studioWindow.focus();
-    studioWindow.webContents.send("dih:studio-tab", initialTab);
+    studioWindow.webContents.send("dih:studio-tab", targetWeapon ? { tab: initialTab, weapon: targetWeapon } : initialTab);
     return;
   }
 
@@ -497,7 +598,7 @@ function openStudioWindow(initialTab = "painter") {
     height: 860,
     minWidth: 1020,
     minHeight: 680,
-    title: "Dih Studio — 3D Skin Creator, Corsair RGB & Project Explorer",
+    title: "Dih Studio — 3D Skin Creator, 7-Gun Aim Trainer, Corsair RGB & Project Explorer",
     backgroundColor: "#0e0f12",
     autoHideMenuBar: true,
     webPreferences: {
@@ -512,7 +613,7 @@ function openStudioWindow(initialTab = "painter") {
   studioWindow = new BrowserWindow(studioOpts);
 
   studioWindow.loadFile(path.join(__dirname, "studio", "studio.html"), {
-    query: { tab: initialTab },
+    query: targetWeapon ? { tab: initialTab, weapon: targetWeapon } : { tab: initialTab },
   });
 
   studioWindow.on("closed", () => {
@@ -541,9 +642,11 @@ function getCatalogBundle() {
     clientName: "Dih",
     THEME_PRESETS,
     WEAPONS,
+    WEAPON_BALLISTICS,
     MELEE_AND_UTILITY_MODELS,
     OFFICIAL_SKINS,
     SHADER_SKINS,
+    DIH_SKIN_PACKS,
     CHARACTER_ASSETS,
     ENVIRONMENT_AND_UI_ASSETS,
     MAPS,
@@ -591,6 +694,9 @@ function applyRuntimeSettingSideEffects(dotPath, value) {
   }
   if (String(dotPath).startsWith("corsair.")) {
     corsairBridge.setConfig(settingsStore.settings.corsair);
+  }
+  if (String(dotPath).startsWith("skins.")) {
+    session.defaultSession.clearCache().catch(() => {});
   }
 }
 
@@ -832,6 +938,7 @@ function setupIpcHandlers() {
   // Skins & Asset Studio handlers
   ipcMain.handle("dih:list-custom-skins", () => skinManager.listCustomSkins());
   ipcMain.handle("dih:list-swap-files", () => skinManager.listSwapFiles());
+  ipcMain.handle("dih:rescan-swap-files", () => skinManager.rescanSwapIndex());
 
   ipcMain.handle("dih:ensure-asset", (_ev, relPath) => skinManager.ensureCachedDeadshotAsset(relPath));
 
@@ -924,8 +1031,8 @@ function setupIpcHandlers() {
     return updated;
   });
 
-  ipcMain.handle("dih:open-studio", (_ev, tab = "painter") => {
-    openStudioWindow(tab);
+  ipcMain.handle("dih:open-studio", (_ev, targetArg = "painter") => {
+    openStudioWindow(targetArg);
     return { ok: true };
   });
 

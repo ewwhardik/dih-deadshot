@@ -54,7 +54,6 @@ use windows::Win32::System::Threading::{
     NORMAL_PRIORITY_CLASS, PROCESS_POWER_THROTTLING_CURRENT_VERSION,
     PROCESS_POWER_THROTTLING_EXECUTION_SPEED, PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION,
     PROCESS_POWER_THROTTLING_STATE, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SET_INFORMATION,
-    PROCESS_VM_READ,
 };
 use windows::Win32::UI::Controls::Dialogs::{
     GetOpenFileNameW, GetSaveFileNameW, OFN_EXPLORER, OFN_FILEMUSTEXIST, OFN_OVERWRITEPROMPT,
@@ -382,7 +381,7 @@ fn measure_split_memory_mb() -> (f64, f64, f64) {
         let wv_root_pid = state_lock().lock().unwrap().webview_browser_pid;
         for pid in collect_child_pids(wv_root_pid) {
             if let Ok(hproc) = OpenProcess(
-                PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
+                PROCESS_QUERY_LIMITED_INFORMATION,
                 false,
                 pid,
             ) {

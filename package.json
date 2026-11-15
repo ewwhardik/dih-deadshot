@@ -1,13 +1,13 @@
 {
   "name": "dih-client",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "ewwhardik (GitHub & Discord: ewwhardik)",
   "homepage": "https://ewwhardik.github.io/dih-deadshot/",
   "repository": {
     "type": "git",
     "url": "https://github.com/ewwhardik/dih-deadshot.git"
   },
-  "description": "Dih v0.3 — Cross-Platform Deadshot.io Client with Native Rust+Win32 Host (~1.7 MB RAM), Hardware Power Auto-Tune, Uncapped FPS Telemetry, Corsair RGB, Custom 3D Skin Studio & 196 Features",
+  "description": "Dih v0.4 — Sub-1MB Native Deadshot.io Client & Cross-Platform Electron Suite with Zero-Ad Blocker, Minimal/Complete Telemetry, Auto-Chat, Omniverse 3D Skin Swapper & Per-Gun Aim Trainer",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -26,7 +26,7 @@
     "corsair",
     "uncapped-fps"
   ],
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@ghostery/adblocker-electron": "^2.13.2",
     "cross-fetch": "^4.1.0",

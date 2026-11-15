@@ -1,103 +1,100 @@
 <div align="center">
-  <img src="assets/dih-icon.png" alt="Dih Client Logo" width="110" />
-  <h1>Dih Client v0.3 (<code>dih-deadshot</code>)</h1>
-  <p><strong>Minimalist, Cross-Platform High-FPS Deadshot.io Client — Native Rust + C + Win32 Host (~1.7 MB Host RAM), macOS &amp; Linux Builds, PC Power Auto-Tune &amp; 196 Wired Features</strong></p>
-
+  <img src="docs/assets/dih-icon.png" alt="Dih Client" width="78" />
+  <h1>Dih Client v0.4 (<code>dih-deadshot</code>)</h1>
+  <p><strong>Sub-1 MB Single-File Native Deadshot.io Client — Titanium Grey-White Bento Glass UI, Royal Flush GLSL Skin Baker, 7-Gun Aim Trainer &amp; Cross-Platform Builds (Windows / macOS / Linux)</strong></p>
   <p>
-    <a href="https://ewwhardik.github.io/dih-deadshot/"><strong>Live Interactive Showcase &amp; Sandbox</strong></a> •
-    <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3"><strong>Download v0.3 (Win / Mac / Linux)</strong></a> •
-    <a href="#features-overview"><strong>196 Features</strong></a>
+    <a href="https://ewwhardik.github.io/dih-deadshot/"><strong>Live Showcase &amp; Feature Explorer</strong></a> •
+    <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4"><strong>Download v0.4 (Win / Mac / Linux)</strong></a> •
+    <a href="LICENSE"><strong>Proprietary License</strong></a>
   </p>
 </div>
 
 ---
 
-## Verified Resource & Security Benchmarks
+## Live `v0.4` Titanium Grey-White Bento Glass UI
+
+<p align="center">
+  <img src="docs/assets/bento-dashboard-v04.png" alt="Dih Client v0.4 Titanium Grey-White Bento Dashboard" width="49%" />
+  <img src="docs/assets/bento-skins-v04.png" alt="Dih Client v0.4 Royal Flush Shader Baker and 7-Gun Skin Packs" width="49%" />
+</p>
+
+---
+
+## What's New in `v0.4.0`
+
+- **Sub-1 MB Single-Executable (`998,912 B` / `975.5 KB` `Dih.exe`):** All HTML, CSS, JavaScript, Three.js 3D models/loaders, `.frag` shader baker, and Aim Trainer assets are compiled &amp; compressed inside `Dih.exe` with zero loose `.js`/`.html`/`.css`/`.json` code files visible on disk (ships only `Dih.exe` + `WebView2Loader.dll`).
+- **VirusTotal &amp; Windows Defender Clean Hardening:** Embedded Win32 `RT_MANIFEST` (`asInvoker` UAC, Windows 10/11 compatibility GUIDs), strict least-privilege Win32 process handles (zero `PROCESS_VM_READ`), zero UPX packing, standard `DYNAMIC_BASE` / `NX_COMPAT` / `HIGH_ENTROPY_VA`, and `0 threats` detected in Windows Defender CLI scan.
+- **Titanium Grey-White Frosted Glass UI:** Redesigned Bento Command Center with clean SF Pro display typography, sparkline KPI cards, asymmetric hardware telemetry bars, quick visual toggle tiles, concentric Power Index ring, top-bar live search across 201 features, and smooth spring animations.
+- **Royal Flush `.frag` GLSL Skin Baker &amp; Custom 7-Gun Pack Builder:** Parity with `deadshot.io/skineditor/` (`MeshBasicMaterial` unlit surface toggle + texture anisotropy), one-click **Royal Flush**, **Dih Obsidian Carbon**, **Sovereign Emerald Gold** packs across all 7 guns, custom palette builder, `.frag` file importer, O(1) swapper, and cookie-safe `DISK_CACHE` refresh.
+- **Zero-Leak Venatus / Atmtd / Prebid Adblocker:** Blocks `vntsm.com`, `vntsm.io`, `venatusmedia.com`, `atmtd.com`, Prebid, and Google ad networks in WebView2 / Electron AND injects `#banner-home`, `#banner-home2`, and `#banner-respawn-*` CSS shields.
+- **Per-Gun 7-Weapon Aim Trainer (`Insert`):** Offline ballistic training arena with weapon-specific fire rates, damage drop-off, spray recoil patterns, flick targets, and recoil tracking for AR, AK47, SMG, Shotgun, Sniper, Deagle, and Pistol.
+- **Minimal / Complete Telemetry (`F6`), Individual F1–F9 Hide Shortcuts &amp; Auto-Join Chat:** Instant single-key HUD isolation (`F1` Watermark, `F2` Crosshair, `F3` Keystrokes, `F4` Telemetry, `F6` Minimal/Complete mode, `F9` Master Hide) plus configurable Auto-Join match chat (`Default: "Dih User Joined"`).
+- **Strict Proprietary License:** Protected under [LICENSE](LICENSE) (`© 2026 ewwhardik. All Rights Reserved.`).
+
+---
+
+## Verified Resource &amp; Security Benchmarks
 
 ### 1. Windows Task Manager: Google Chrome (`1,652.3 MB`) vs Dih Native Host (`1.7 MB`)
 
-Chrome spawns 20+ helper processes, gets throttled with Windows 11 Efficiency Mode (**EcoQoS** green leaf), and consumes **1,652.3 MB** just idling. **Dih Native Host (`Dih.exe`)** runs a purpose-built Rust + C + Win32 + WebView2 shell at **1.7 MB host working set** (`0.1%` CPU), with EcoQoS explicitly disabled across the process tree (`SetProcessPriorityBoost`, P-Core `SetProcessAffinityMask`, and `timeBeginPeriod(1)`).
+Chrome spawns 20+ helper processes, gets throttled with Windows 11 Efficiency Mode (**EcoQoS** green leaf), and consumes **1,652.3 MB** just idling. **Dih Native Host (`Dih.exe`)** ships at **975.5 KB (`998,912` bytes)** on disk and runs a purpose-built Rust + C + Win32 + WebView2 shell at **1.7 MB idle host working set** (`0.1%` CPU), with EcoQoS disabled, P-Core scheduling, and `timeBeginPeriod(1)`.
 
 ![Task Manager: Dih Native Host 1.7 MB vs Google Chrome 1,652.3 MB](assets/benchmarks/taskmgr-chrome-vs-dih.png)
 
-### 2. Independent Malware Scan Proof: `0 / 13` Scanners Clean (Jotti)
+### 2. Clean Security Posture &amp; Malware Scan Proof
 
-Verified cleanly compiled PE32+ executable (`Dih.exe`, `1.14 MB`) on Jotti (scan job `pqt3b02jev`) across Avast, Bitdefender, ClamAV, Cyren, Dr.WEB, eScan, Fortinet, G DATA, IKARUS, K7 Security, Kaspersky, Trend Micro, and VBA32 — **0 / 13 scanners reported malware**.
+- **v0.4 PE32+ Hardening:** `Dih.exe` (`998,912` B) embeds standard UAC `asInvoker` `RT_MANIFEST`, standard Microsoft PE security flags (`0x8160`: ASLR + DEP/NX + High-Entropy VA), zero `PROCESS_VM_READ`, zero UPX packing, and clean Windows Defender CLI verification (`0 threats`).
+- **v0.4.0 Multi-Engine Scan (`0 / 13` Clean on Jotti — `998,912 B` `Dih.exe`, MD5 `c7581cfe07c344200b90146da8d51597`):** Cleanly compiled PE32+ binary verified across Avast, Bitdefender, ClamAV, Cyren, Dr.WEB, eScan, Fortinet, G DATA, IKARUS, K7 Security, Kaspersky, Trend Micro, and VBA32 — **0 / 13 scanners reported malware**.
 
 ![Jotti Malware Scan Report: Dih.exe 0/13 Clean](assets/benchmarks/jotti-scan-clean.png)
 
 ---
 
-## Dih Client v0.3 vs Omniverse (`Typhoonz0/omniverse`) vs Google Chrome
+## Dih Client `v0.4` vs Omniverse (`Typhoonz0/omniverse`) vs Google Chrome
 
-| Capability / Architecture | Dih Client v0.3 (`ewwhardik/dih-deadshot`) | `Typhoonz0/omniverse` | Google Chrome |
+| Capability / Architecture | Dih Client `v0.4` (`ewwhardik/dih-deadshot`) | `Typhoonz0/omniverse` | Google Chrome |
 | :--- | :--- | :--- | :--- |
-| **Core Runtime** | **Rust + C + Win32 + WebView2** (Windows flagship) + **macOS &amp; Linux** Electron builds | Electron JS wrapper | Multi-process general browser |
-| **Host Shell RAM Overhead** | **1.7 MB** observed idle (strict `10–15 MB` budget + live trim) | ~180–350 MB Electron shell overhead | **1,652.3 MB** (22 processes captured) |
-| **Windows 11 Scheduling** | **Full EcoQoS tree bypass + `timeBeginPeriod(1)` + P-Core Affinity + Focus Scaling** | Chromium launch flags only | Throttled by Windows EcoQoS (green leaf) |
-| **First-Boot PC Power Analyzer** | **Animated Boot Phase**: scores CPU, GPU, RAM &amp; Hz (`10–100`) &amp; auto-tunes optimal preset | None | None |
-| **Wired Client Features** | **196 features** (Black-EQ, Net-Graph, DPR Scaler, Pinned Favorites, Sub-Tabs) | Launcher, basic swapper &amp; crosshair | 0 native client features |
-| **Interactive Crosshair + Pro HUD** | Reactive spread, hitmarker X + sound, ADS scale, Weapon Slot `1/2/3`, Reload timer, `DIH-XHAIR:` codes | Static overlay image | None |
-| **Built-In 3D Skin Studio** | **Offline Three.js + Draco `.GLB` preview, UV paint brushes &amp; local `.webp` vault** | Static file replacement only | None |
-| **Corsair / OpenRGB Integration** | **Real-time `6x22` key matrix + reactive health/firing/ping/ADS lighting** | None | None |
-| **Cross-Platform Releases** | **Windows (`Dih.exe`), macOS (`arm64` + `x64` `.dmg`/`.zip`), Linux (`.AppImage`/`.deb`/`.tar.gz`)** | Desktop Electron | Cross-platform browser |
+| **Package Size &amp; Code Packaging** | **975.5 KB single `Dih.exe`** + `WebView2Loader.dll` (zero loose source files) | ~120+ MB unpacked Electron files | ~350+ MB full browser |
+| **Host Shell RAM Overhead** | **1.7 MB** observed idle (`10–15 MB` budget guard) | ~180–350 MB Electron overhead | **1,652.3 MB** (22 processes) |
+| **Ad &amp; Venatus (`vntsm`) Shield** | **WebView2 COM filter + CSS banner suppression (`0` leaks)** | Basic domain list | Extensions consume extra RAM |
+| **3D Studio &amp; `.frag` Shader Baker** | **Offline Three.js + Royal Flush `.frag` + 7-Gun Custom Pack Builder** | Static swapper only | None |
+| **7-Gun Aim Trainer (`Insert`)** | **Ballistic practice calibrated per Deadshot weapon** | None | None |
+| **Telemetry Views &amp; F1–F9 Hides** | **Minimal / Complete (`F6`) + individual F1–F9 toggles** | Basic FPS toggle | None |
+| **Auto-Join Match Chat** | **Custom chat message on lobby->match load (`"Dih User Joined"`)** | None | None |
+| **Corsair / OpenRGB Integration** | **Native USB HID (`VID_1B1C`) + OpenRGB TCP (`6742`)** | None | None |
 
 ---
 
-## Animated Boot Phase &amp; PC Power Auto-Tune
+## Cross-Platform Downloads (`v0.4`)
 
-Every time Dih Client boots cleanly (and on first launch auto-configuration), it runs a 3-phase hardware analysis pipeline (`bootAnalyzer.js` + `hw_analyzer.rs` / `systemMetrics.js`):
-
-1. **System Scan:** Probes CPU core/thread count, RAM capacity, DXGI/Metal/OpenGL GPU specs, and live monitor refresh rate (`Hz`).
-2. **Power Scoring (`10–100`):** Classifies the machine into `extreme_workstation`, `esports_desktop`, `balanced_laptop`, or `low_end_pc`.
-3. **Auto-Tune Selection:** Defaults to **`Max Compute`** on capable hardware so WebGL stays `desynchronized` with high-performance scheduling, or safely switches to **`Balanced`** / **`Low-End PC`** (scaling DPR cleanly to preserve FPS). You can switch presets anytime in the Command Center Hero card or re-run analysis.
-
----
-
-## Interactive Website &amp; Live Client Preview
-
-Explore all **196 features** live in your browser on the **[Dih Client GitHub Pages Showcase](https://ewwhardik.github.io/dih-deadshot/)**:
-
-- **Live PC Power Simulator:** Test hardware tiers &amp; inspect recommended WebGL / Win32 / DPR flags.
-- **Crosshair, Black-EQ &amp; Net-Graph Sandbox:** Design pro crosshairs, generate shareable `DIH-XHAIR:` codes, preview SVG Black Equalizer &amp; live scrolling frame-time/ping graph.
-- **3D Skin Studio &amp; Corsair `6x22` Keyboard Preview:** Preview official skins + reactive Corsair lighting zones (`reactive_tactical`, `fps_thermal`, `ping_health`, `reload_sweep`, etc.).
-- **Searchable 196-Feature Catalog:** Filter all features by category &amp; status.
-
----
-
-## Cross-Platform Downloads (`v0.3`)
-
-Grab pre-built packages on the **[Releases (`v0.3`)](https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3)** page:
+Grab pre-built packages on the **[Releases (`v0.4`)](https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4)** page:
 
 | Platform | Package(s) | Engine &amp; Highlights |
 | :--- | :--- | :--- |
-| **Windows (x64 Flagship)** | `Dih-Client-v0.3-win-x64.zip` | Native Rust + C + Win32 + WebView2 (`1.7 MB` host shell, P-Core affinity, Priority Boost, `timeBeginPeriod(1)`) |
-| **macOS (Apple Silicon &amp; Intel)** | `Dih-Client-0.3.0-mac-arm64.dmg`, `Dih-Client-0.3.0-mac-x64.dmg`, `.zip` | Chromium/Electron with Metal ANGLE backend, `system_profiler` ProMotion Hz &amp; USB Corsair detection |
-| **Linux (x64)** | `Dih-Client-0.3.0-linux-x64.AppImage`, `.deb`, `.tar.gz` | Vulkan/OpenGL backend flags, `lspci`/`xrandr` telemetry &amp; OpenRGB/`ckb-next` support |
+| **Windows (x64 Flagship)** | `Dih-Client-v0.4-win-x64.zip` | **975.5 KB single `Dih.exe`** (Rust + C + Win32 + WebView2, zero loose code files, `asInvoker` manifest, EcoQoS bypass) |
+| **Windows Electron Portable** | `Dih-Client-v0.4.0-electron-win-x64.zip` | Portable Chromium/Electron build |
+| **macOS (M-Series ARM64 &amp; Intel x64)** | `Dih-Client-0.4.0-mac-arm64.zip`, `Dih-Client-0.4.0-mac-x64.zip` | Metal GPU ANGLE backend, ProMotion Hz detection, OpenRGB, 3D Studio &amp; 7-Gun Aim Trainer |
+| **Linux (x64)** | `Dih-Client-0.4.0-linux-x64.tar.gz`, `Dih-Client-0.4.0-linux-x64.zip` | Vulkan/OpenGL backend flags, `lspci`/`xrandr` telemetry &amp; OpenRGB/`ckb-next` support |
 
 ---
 
-## <a id="features-overview"></a>Key Capabilities Across 9 Categories (196 Features)
-
-1. **Performance &amp; FPS:** Max Compute default preset, Win32 Process Priority Boost, P-Core affinity mask, Focus Priority Scaling, EcoQoS bypass, `timeBeginPeriod(1)`, `--disable-smooth-scrolling`, early pre-DOM WebGL `desynchronized` + `powerPreference: "high-performance"`, dynamic `canvasDprScale`, live host RAM trimmer (`10–15 MB` budget).
-2. **Real PC Metrics &amp; HUD:** Uncapped RAF FPS counter, `1% Low FPS`, frame-time jitter, scrolling Net-Graph canvas, Session K/D/Kills/Time stats pill, Weapon Slot `1/2/3` badge, `R` reload sweep bar, Pointer Lock status LED, real CPU/GPU/RAM/Monitor Hz polling.
-3. **Window &amp; Privacy:** Borderless / Always-on-Top / Opacity slider, Discord Rich Presence, Context Menu block, Close confirmation dialog, targeted ad/tracker blocker without wildcard COM stalls.
-4. **Grey Minimalist UI &amp; Easy Navigation:** Obsidian/Titanium minimal theme, Hero Hardware Power Card, Pinned Favorites strip (`★` / `☆`), Sub-Tab pills inside dense tabs, filter chips (`All` / `Active On` / `Pinned` / `Restart Flags`), compact rail toggle.
-5. **Skin Changer &amp; 3D Skin Studio:** Official + custom skin interceptor, 7-weapon selector, Three.js + Draco `.GLB` offline 3D inspector, layer paint studio &amp; local `.webp` vault.
-6. **Corsair &amp; OpenRGB Sync:** Real-time `6x22` key matrix with 8 lighting modes and WebHID / OpenRGB TCP packet bridge.
-7. **Crosshair &amp; Visuals/Audio:** Custom dot/gap/length/thickness/outline/ADS/WASD velocity spread, diagonal hitmarker flash + WebAudio synth, SVG `<feComponentTransfer>` Black Equalizer, Digital Vibrance boost, Vignette control.
-
-### Default Hotkeys
+## Default Hotkeys
 
 | Key | Action |
 | :--- | :--- |
-| `RightShift` / `o` | Toggle Dih Command Center |
-| `F7` | Open 3D Skin Studio &amp; Corsair Matrix |
+| `RightShift` / `o` | Toggle Bento Glass Command Center |
+| `F1` | Toggle Top-Right Watermark |
+| `F2` | Toggle Custom Crosshair |
+| `F3` | Toggle Keystrokes + CPS Overlay |
+| `F4` | Toggle Telemetry HUD |
+| `F5` | Quick Reload Game &amp; Textures |
+| `F6` | Switch Telemetry View (`Minimal` / `Complete`) |
+| `F7` | Open 3D Skin Studio |
 | `F8` | Mute / Unmute Master Audio |
 | `F9` | Hide / Show All Client HUD |
 | `F10` | Capture Clean Screenshot |
 | `F11` | Toggle Fullscreen |
-| `F5` | Quick Reload Game |
+| `Insert` | Open 7-Gun Ballistic Aim Trainer |
 | `b` | Toggle Match Stopwatch |
 
 ---
@@ -105,28 +102,22 @@ Grab pre-built packages on the **[Releases (`v0.3`)](https://github.com/ewwhardi
 ## Building &amp; Testing from Source
 
 ```powershell
-# Install Node dependencies (Electron 38 + electron-builder)
+# Install Node dependencies
 npm install
-
-# Run full automated verification suite (syntax, registry, PC Power Analyzer, Electron CDP, Native smoke)
-npm test
 
 # Sync docs/features-data.js from src/data/featureRegistry.js
 npm run sync-docs
 
-# Build Native Rust + C + Win32 host (Windows, outputs dist\Dih\Dih.exe)
-npm run build:native
+# Run automated verification suite (syntax, 201 features, Electron CDP, Native smoke)
+npm test
 
-# Build macOS / Linux installers locally (on respective OS)
-npm run dist-mac
-npm run dist-linux
+# Build sub-1MB single-binary Native Rust + C + Win32 host (outputs dist\Dih\Dih.exe)
+npm run build:native
 ```
 
 ---
 
-## Credits
+## License &amp; Credits
 
-- **Developer &amp; Maintainer:** **ewwhardik**
-  - GitHub: [`@ewwhardik`](https://github.com/ewwhardik)
-  - Discord: `ewwhardik`
-  - Repository: [`ewwhardik/dih-deadshot`](https://github.com/ewwhardik/dih-deadshot)
+- **License:** Proprietary All Rights Reserved — see [LICENSE](LICENSE). Unauthorized copying, redistribution, modification, or commercial use is prohibited.
+- **Developer &amp; Maintainer:** **ewwhardik** ([`@ewwhardik`](https://github.com/ewwhardik) on GitHub • `ewwhardik` on Discord)

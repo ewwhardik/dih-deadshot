@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 const BROWSER_UA: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36";
 
 pub struct SkinManager {
     pub custom_skins_dir: PathBuf,
@@ -16,6 +16,7 @@ pub struct SkinManager {
     pub asset_cache_dir: PathBuf,
     pub catalog: Value,
     mem_cache: Mutex<HashMap<String, Vec<u8>>>,
+    swap_index: Mutex<HashMap<String, PathBuf>>,
     in_flight: Arc<Mutex<HashSet<String>>>,
 }
 
@@ -79,10 +80,39 @@ impl SkinManager {
             asset_cache_dir: user_data_dir.join("asset-cache"),
             catalog,
             mem_cache: Mutex::new(HashMap::new()),
+            swap_index: Mutex::new(HashMap::new()),
             in_flight: Arc::new(Mutex::new(HashSet::new())),
         };
         mgr.ensure_dirs();
+        mgr.rescan_swap_index();
         mgr
+    }
+
+    pub fn rescan_swap_index(&self) {
+        let mut idx = HashMap::new();
+        fn walk(root: &Path, dir: &Path, idx: &mut HashMap<String, PathBuf>) {
+            if let Ok(rd) = fs::read_dir(dir) {
+                for ent in rd.flatten() {
+                    let p = ent.path();
+                    if p.is_dir() {
+                        walk(root, &p, idx);
+                    } else {
+                        if let Ok(rel) = p.strip_prefix(root) {
+                            let rel_low = rel.to_string_lossy().replace('\\', "/").to_ascii_lowercase();
+                            idx.insert(rel_low, p.clone());
+                        }
+                        if let Some(base) = p.file_name().and_then(|s| s.to_str()) {
+                            let base_low = base.to_ascii_lowercase();
+                            idx.entry(base_low).or_insert_with(|| p.clone());
+                        }
+                    }
+                }
+            }
+        }
+        walk(&self.user_swap_dir, &self.user_swap_dir, &mut idx);
+        if let Ok(mut g) = self.swap_index.lock() {
+            *g = idx;
+        }
     }
 
     pub fn clear_mem_cache(&self) {
@@ -113,26 +143,34 @@ impl SkinManager {
         let mut patterns = vec![
             "https://deadshot.io/promo/*".to_string(),
             "https://www.deadshot.io/promo/*".to_string(),
+            "https://deadshot.io/textures/*".to_string(),
+            "https://www.deadshot.io/textures/*".to_string(),
             "https://deadshot.io/images/scope.webp*".to_string(),
             "https://www.deadshot.io/images/scope.webp*".to_string(),
             "https://deadshot.io/weapons/*".to_string(),
             "https://www.deadshot.io/weapons/*".to_string(),
-            "https://deadshot.io/__dih_custom/*".to_string(),
-            "https://www.deadshot.io/__dih_custom/*".to_string(),
-            "https://deadshot.io/__dih_cache/*".to_string(),
-            "https://www.deadshot.io/__dih_cache/*".to_string(),
+            "https://deadshot.io/skins/*".to_string(),
+            "https://www.deadshot.io/skins/*".to_string(),
+            "https://deadshot.io/__dih_*".to_string(),
+            "https://www.deadshot.io/__dih_*".to_string(),
         ];
         if let Some(arr) = self.list_swap_files().as_array() {
             let mut dirs = BTreeSet::new();
+            let mut has_flat_basename = false;
             for item in arr {
                 if let Some(s) = item.as_str() {
                     if let Some((top, _)) = s.split_once('/') {
-                        if !top.is_empty() && !matches!(top, "promo" | "weapons" | "__dih_custom" | "__dih_cache") {
+                        if !top.is_empty() && !matches!(top, "promo" | "textures" | "weapons" | "skins" | "__dih_custom" | "__dih_cache") {
                             dirs.insert(top.to_string());
                         }
                     } else if !s.is_empty() {
-                        dirs.insert(s.to_string());
+                        has_flat_basename = true;
                     }
+                }
+            }
+            if has_flat_basename {
+                for folder in ["character", "maps", "audio", "animatedskins"] {
+                    dirs.insert(folder.to_string());
                 }
             }
             for top in dirs {
@@ -420,15 +458,17 @@ impl SkinManager {
             return None;
         };
 
-        // 3. Direct user swap directory override (<userData>/swap/<rel>)
-        if let Some(override_file) = safe_join(&self.user_swap_dir, rel_path) {
-            if override_file.is_file() {
-                if let Some(bytes) = self.read_cached_bytes(&format!("swap:{rel_path}"), &override_file) {
-                    return Some(WebResourceBytes {
-                        bytes,
-                        mime: mime_from_ext(rel_path),
-                    });
-                }
+        // 3. O(1) Omniverse-style swap index lookup (relative path OR recursive basename match)
+        let basename = rel_path.rsplit('/').next().unwrap_or(rel_path);
+        let swap_hit = self.swap_index.lock().ok().and_then(|idx| {
+            idx.get(rel_path).cloned().or_else(|| idx.get(basename).cloned())
+        });
+        if let Some(override_file) = swap_hit {
+            if let Some(bytes) = self.read_cached_bytes(&format!("swap:{rel_path}"), &override_file) {
+                return Some(WebResourceBytes {
+                    bytes,
+                    mime: mime_from_ext(basename),
+                });
             }
         }
 
@@ -454,8 +494,11 @@ impl SkinManager {
             }
         }
 
-        // 5. Scope reticle swap
-        if rel_path == "images/scope.webp" {
+        // 5. Scope reticle swap (Deadshot uses textures/sniperscope.webp & blurredsniperscope.webp)
+        if matches!(
+            rel_path,
+            "textures/sniperscope.webp" | "textures/blurredsniperscope.webp" | "images/scope.webp"
+        ) {
             let scope_mode = settings
                 .pointer("/skins/extraSwaps/scope")
                 .and_then(|v| v.as_str())
@@ -474,13 +517,17 @@ impl SkinManager {
             }
         }
 
-        // 6. Weapon skins swap (weapons/<folder>/<name>comp[mobile|small].webp)
+        // 6. Weapon skins swap (weapons/<folder>/* AND equipped skins/compressed/{skin}{weapon}[0-4].webp)
         let sync_small = settings
             .pointer("/skins/syncSmallIcons")
             .and_then(|v| v.as_bool())
             .unwrap_or(true);
         let sync_mobile = settings
             .pointer("/skins/syncMobileVariants")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
+        let override_equipped = settings
+            .pointer("/skins/overrideEquippedGameSkin")
             .and_then(|v| v.as_bool())
             .unwrap_or(true);
 
@@ -491,11 +538,26 @@ impl SkinManager {
                 let mob_tex = meta.get("mobileTexture").and_then(|v| v.as_str()).unwrap_or("");
                 let small_tex = meta.get("smallTexture").and_then(|v| v.as_str()).unwrap_or("");
 
-                let matches = rel_path == main_tex
+                let matches_stock = rel_path == main_tex
                     || (!legacy_tex.is_empty() && rel_path == legacy_tex)
                     || (sync_mobile && rel_path == mob_tex)
                     || (sync_small && rel_path == small_tex);
-                if !matches {
+
+                let matches_equipped_skin = if !matches_stock
+                    && override_equipped
+                    && rel_path.starts_with("skins/compressed/")
+                    && basename.ends_with(".webp")
+                {
+                    let stem = &basename[..basename.len() - 5];
+                    let no_wear = stem
+                        .strip_suffix(['0', '1', '2', '3', '4'])
+                        .unwrap_or(stem);
+                    no_wear.ends_with(weapon_id.as_str()) && no_wear.len() > weapon_id.len()
+                } else {
+                    false
+                };
+
+                if !matches_stock && !matches_equipped_skin {
                     continue;
                 }
 
@@ -518,17 +580,15 @@ impl SkinManager {
                     if official_id != "default" {
                         let wear = cfg.get("wear").and_then(|v| v.as_u64()).unwrap_or(0);
                         let target_rel = self.resolve_official_rel_path(official_id, weapon_id, wear);
-                        if let Some(cached_path) = safe_join(&self.asset_cache_dir, target_rel.trim_start_matches('/')) {
-                            if cached_path.exists() && cached_path.metadata().map(|m| m.len() > 0).unwrap_or(false) {
-                                if let Some(bytes) = self.read_cached_bytes(&format!("official:{target_rel}"), &cached_path) {
-                                    return Some(WebResourceBytes {
-                                        bytes,
-                                        mime: "image/webp",
-                                    });
-                                }
-                            } else {
-                                // Never block the COM WebView2 UI thread waiting on HTTPS downloads.
-                                self.trigger_async_cache_download(&target_rel);
+                        if rel_path == target_rel {
+                            return None;
+                        }
+                        if let Ok(cached_path) = self.ensure_cached_deadshot_asset(&target_rel) {
+                            if let Some(bytes) = self.read_cached_bytes(&format!("official:{target_rel}"), &cached_path) {
+                                return Some(WebResourceBytes {
+                                    bytes,
+                                    mime: "image/webp",
+                                });
                             }
                         }
                     }

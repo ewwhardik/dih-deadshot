@@ -11,10 +11,22 @@ fn main() {
     println!("cargo:rerun-if-changed=../src/data/defaultSettings.js");
     println!("cargo:rerun-if-changed=../src/data/deadshotCatalog.js");
     println!("cargo:rerun-if-changed=../src/data/featureRegistry.js");
+    println!("cargo:rerun-if-changed=../src/data");
+    println!("cargo:rerun-if-changed=../src/renderer");
+    println!("cargo:rerun-if-changed=../src/studio");
     println!("cargo:rerun-if-changed=../assets/dih-icon.ico");
     println!("cargo:rerun-if-changed=csrc/fast_stats.c");
 
-    generate_catalog_json(&repo_root, &out_dir);
+    if env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("gnu") {
+        let is_gnullvm = env::var("TARGET").as_deref() == Ok("x86_64-pc-windows-gnullvm");
+        println!("cargo:rustc-link-arg={}", if is_gnullvm { "--gc-sections" } else { "-Wl,--gc-sections" });
+        if is_gnullvm {
+            println!("cargo:rustc-link-arg=--icf=all");
+        }
+        println!("cargo:rustc-link-arg=-s");
+    }
+
+    generate_catalog_and_studio_gz(&repo_root, &out_dir);
     configure_gnullvm_runtime(&out_dir);
     compile_c_kernel(&manifest_dir, &out_dir);
     compile_win32_resources(&repo_root, &out_dir);
@@ -68,40 +80,137 @@ fn configure_gnullvm_runtime(out_dir: &Path) {
     }
 }
 
-fn generate_catalog_json(repo_root: &Path, out_dir: &Path) {
-    let dst = out_dir.join("catalog.json");
+fn generate_catalog_and_studio_gz(repo_root: &Path, out_dir: &Path) {
+    let dst = out_dir.join("catalog_core.json");
+    let out_dir_str = out_dir.to_string_lossy().replace('\\', "/");
     let script = r#"
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
+const vm = require('vm');
 const ds = require('./src/data/defaultSettings.js');
 const cat = require('./src/data/deadshotCatalog.js');
 const reg = require('./src/data/featureRegistry.js');
-console.log(JSON.stringify({
+const outDir = process.env.DIH_BUILD_OUT_DIR;
+
+const slimJs = (s) => s.replace(/^\s*\/\/.*$/gm, '').replace(/^\s+/gm, '').replace(/\n+/g, '\n');
+const slimCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').trim();
+
+const fullCatalog = {
   THEME_PRESETS: ds.THEME_PRESETS,
   DEFAULT_SETTINGS: ds.DEFAULT_SETTINGS,
   WEAPONS: cat.WEAPONS,
   MELEE_AND_UTILITY_MODELS: cat.MELEE_AND_UTILITY_MODELS,
   OFFICIAL_SKINS: cat.OFFICIAL_SKINS,
+  MATERIAL_SHADER_SKINS: cat.SHADER_SKINS,
   SHADER_SKINS: cat.SHADER_SKINS,
+  DIH_SKIN_PACKS: cat.DIH_SKIN_PACKS || [],
   CHARACTER_ASSETS: cat.CHARACTER_ASSETS,
   ENVIRONMENT_AND_UI_ASSETS: cat.ENVIRONMENT_AND_UI_ASSETS,
   MAPS: cat.MAPS,
   DSIO_SETTINGS_KEYS: cat.DSIO_SETTINGS_KEYS,
   DSIO_KEYBIND_KEYS: cat.DSIO_KEYBIND_KEYS,
   STORAGE_KEYS: cat.STORAGE_KEYS,
+  WEAPON_BALLISTICS: cat.WEAPON_BALLISTICS,
   FEATURE_CATEGORIES: reg.FEATURE_CATEGORIES,
   FEATURE_REGISTRY: reg.FEATURE_REGISTRY,
+};
+
+fs.writeFileSync(path.join(outDir, 'catalog_core.json'), JSON.stringify({
+  THEME_PRESETS: ds.THEME_PRESETS,
+  DEFAULT_SETTINGS: ds.DEFAULT_SETTINGS,
+  WEAPONS: cat.WEAPONS,
+  OFFICIAL_SKINS: cat.OFFICIAL_SKINS,
+  SHADER_SKINS: cat.SHADER_SKINS,
+  FEATURE_COUNT: reg.FEATURE_REGISTRY.length,
 }));
+
+const catalogJs = `window.__DIH_CATALOG__ = ${JSON.stringify(fullCatalog)};\n`;
+fs.writeFileSync(path.join(outDir, 'studio_catalog.js.gz'), zlib.gzipSync(Buffer.from(catalogJs), { level: 9 }));
+
+const shadowCss = JSON.stringify(slimCss(fs.readFileSync('src/renderer/styles.css', 'utf8')));
+const modFiles = [
+  'src/renderer/utils.js',
+  'src/renderer/bootAnalyzer.js',
+  'src/renderer/telemetryHud.js',
+  'src/renderer/netGraphHud.js',
+  'src/renderer/keysOverlay.js',
+  'src/renderer/crosshairEngine.js',
+  'src/renderer/extraOverlays.js',
+  'src/renderer/filterEngine.js',
+  'src/renderer/corsairReactive.js',
+  'src/renderer/autoChat.js',
+  'src/studio/shaderBaker.js',
+  'src/renderer/leaderboardModal.js',
+  'src/renderer/commandCenter.js',
+  'src/renderer/overlayMain.js',
+];
+const modsSrc = modFiles.map((f) => slimJs(fs.readFileSync(f, 'utf8'))).join('\n');
+const overlayJs = `(function(){\n  if (window.__DIH_BUNDLE_LOADED__) return;\n  window.__DIH_BUNDLE_LOADED__ = true;\n  const DIH_SHADOW_CSS = ${shadowCss};\n  const DIH_NS = {};\n  ${modsSrc}\n  function startDih(){\n    if (window.__DIH_BOOTED__) return;\n    window.__DIH_BOOTED__ = true;\n    if (typeof DIH_NS.boot === "function") DIH_NS.boot(DIH_SHADOW_CSS);\n  }\n  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startDih, { once: true });\n  else startDih();\n})();\n`;
+new vm.Script(overlayJs, { filename: 'overlay_bundle.js' });
+fs.writeFileSync(path.join(outDir, 'overlay_bundle.js.gz'), zlib.gzipSync(Buffer.from(overlayJs), { level: 9 }));
+
+const studioHtml = fs.readFileSync('src/studio/studio.html', 'utf8')
+  .replace('<script src="./shaderBaker.js"></script>', '<script src="./catalog.js"></script>\n  <script src="./shaderBaker.js"></script>')
+  .replace(/>\s+</g, '><');
+fs.writeFileSync(path.join(outDir, 'studio_html.gz'), zlib.gzipSync(Buffer.from(studioHtml), { level: 9 }));
+
+const studioMap = [
+  ['src/studio/studio.css', 'studio_css.gz', 'css'],
+  ['src/studio/studio.js', 'studio_js.gz', 'js'],
+  ['src/studio/aimTrainer.js', 'studio_aim.gz', 'js'],
+  ['src/studio/shaderBaker.js', 'studio_baker.gz', 'js'],
+  ['node_modules/three/build/three.core.min.js', 'three_core.gz', 'raw'],
+  ['node_modules/three/build/three.module.min.js', 'three_mod.gz', 'raw'],
+  ['node_modules/three/examples/jsm/controls/OrbitControls.js', 'three_orbit.gz', 'js'],
+  ['node_modules/three/examples/jsm/loaders/GLTFLoader.js', 'three_gltf.gz', 'js'],
+  ['node_modules/three/examples/jsm/utils/BufferGeometryUtils.js', 'three_utils.gz', 'js'],
+];
+
+function stripBlockCommentsSafe(src) {
+  let out = '', i = 0, n = src.length, q = '', esc = false;
+  while (i < n) {
+    const ch = src[i], nx = src[i + 1];
+    if (q) {
+      out += ch;
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === q) q = '';
+      i++;
+      continue;
+    }
+    if (ch === '/' && nx === '*') {
+      i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
+      i += 2;
+      out += ' ';
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') q = ch;
+    out += ch;
+    i++;
+  }
+  return out;
+}
+for (const [srcRel, outName, mode] of studioMap) {
+  let raw = fs.readFileSync(srcRel);
+  if (outName.startsWith('three_') && mode === 'js') raw = Buffer.from(slimJs(stripBlockCommentsSafe(raw.toString('utf8'))));
+  else if (mode === 'js') raw = Buffer.from(slimJs(raw.toString('utf8')));
+  else if (mode === 'css') raw = Buffer.from(slimCss(raw.toString('utf8')));
+  fs.writeFileSync(path.join(outDir, outName), zlib.gzipSync(raw, { level: 9 }));
+}
 "#;
     let out = Command::new("node")
         .current_dir(repo_root)
+        .env("DIH_BUILD_OUT_DIR", &out_dir_str)
         .args(["-e", script])
         .output()
-        .expect("Node.js is required at build time to serialize catalog.json");
+        .expect("Node.js is required at build time to serialize catalog.json and embedded studio assets");
     assert!(
-        out.status.success(),
-        "Failed to serialize catalog.json via node: {}",
+        out.status.success() && dst.exists(),
+        "Failed to generate embedded assets via node: {}",
         String::from_utf8_lossy(&out.stderr)
     );
-    fs::write(&dst, &out.stdout).unwrap();
 }
 
 fn find_msvc_tool(name: &str) -> Option<PathBuf> {
@@ -228,9 +337,9 @@ fn build_version_resource() -> Vec<u8> {
     let mut fixed = Vec::new();
     push_u32(&mut fixed, 0xFEEF04BD); // dwSignature
     push_u32(&mut fixed, 0x00010000); // dwStrucVersion
-    push_u32(&mut fixed, 0x00000003); // dwFileVersionMS (0.3)
+    push_u32(&mut fixed, 0x00000004); // dwFileVersionMS (0.4)
     push_u32(&mut fixed, 0x00000000); // dwFileVersionLS (0.0)
-    push_u32(&mut fixed, 0x00000003); // dwProductVersionMS (0.3)
+    push_u32(&mut fixed, 0x00000004); // dwProductVersionMS (0.4)
     push_u32(&mut fixed, 0x00000000); // dwProductVersionLS (0.0)
     push_u32(&mut fixed, 0x0000003F); // dwFileFlagsMask
     push_u32(&mut fixed, 0);          // dwFileFlags
@@ -243,13 +352,13 @@ fn build_version_resource() -> Vec<u8> {
     let pairs = [
         ("CompanyName", "ewwhardik"),
         ("FileDescription", "Dih - Native Uncapped Deadshot.io Client"),
-        ("FileVersion", "0.3.0.0"),
+        ("FileVersion", "0.4.0.0"),
         ("InternalName", "Dih"),
-        ("LegalCopyright", "ewwhardik (GitHub & Discord: ewwhardik)"),
+        ("LegalCopyright", "Copyright (c) 2026 ewwhardik. All Rights Reserved."),
         ("OriginalFilename", "Dih.exe"),
         ("ProductName", "Dih Client"),
-        ("ProductVersion", "0.3.0.0"),
-        ("Comments", "Minimalist High-FPS Deadshot.io Client | GitHub: ewwhardik | Discord: ewwhardik"),
+        ("ProductVersion", "0.4.0.0"),
+        ("Comments", "Minimalist Sub-1MB High-FPS Deadshot.io Client | GitHub: ewwhardik | Discord: ewwhardik"),
     ];
 
     let string_table = build_version_node("040904B0", &[], 1, 0, |children| {
@@ -291,15 +400,19 @@ fn compile_win32_resources(repo_root: &Path, out_dir: &Path) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ]);
 
-    // Build RT_GROUP_ICON (type 14, id 1) + RT_ICON (type 3, id 1..N)
+    // Build RT_GROUP_ICON (type 14, id 1) + RT_ICON (type 3, id 1..N) keeping <= 64px PNG frames for compact exe size
+    let keep_indices: Vec<usize> = (0..count)
+        .filter(|&i| ico[6 + i * 16] != 0)
+        .collect();
     let mut group = Vec::new();
-    group.extend_from_slice(&ico[0..6]); // idReserved, idType=1, idCount
-    for i in 0..count {
+    group.extend_from_slice(&ico[0..4]); // idReserved, idType=1
+    push_u16(&mut group, keep_indices.len() as u16);
+    for (seq_idx, &i) in keep_indices.iter().enumerate() {
         let dir_off = 6 + i * 16;
         let bytes_in_res = u32::from_le_bytes(ico[dir_off + 8..dir_off + 12].try_into().unwrap()) as usize;
         let img_offset = u32::from_le_bytes(ico[dir_off + 12..dir_off + 16].try_into().unwrap()) as usize;
         group.extend_from_slice(&ico[dir_off..dir_off + 12]);
-        let icon_id = (i + 1) as u16;
+        let icon_id = (seq_idx + 1) as u16;
         push_u16(&mut group, icon_id);
         write_res_entry(&mut res, 3, icon_id, 0x0409, &ico[img_offset..img_offset + bytes_in_res]);
     }
@@ -307,6 +420,25 @@ fn compile_win32_resources(repo_root: &Path, out_dir: &Path) {
 
     let ver = build_version_resource();
     write_res_entry(&mut res, 16, 1, 0x0409, &ver);
+
+    let manifest = br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity version="0.4.0.0" processorArchitecture="amd64" name="ewwhardik.DihClient" type="win32"/>
+  <description>Dih Uncapped Deadshot.io Client</description>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
+    </application>
+  </compatibility>
+</assembly>"#;
+    write_res_entry(&mut res, 24, 1, 0x0409, manifest);
 
     let res_path = out_dir.join("dih.res");
     let obj_path = out_dir.join("dih_res.obj");

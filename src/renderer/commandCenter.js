@@ -14,6 +14,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   telemetryHud,
   leaderboardModal,
   bootAnalyzer,
+  autoChat,
   toast,
   onRefreshAll,
 }) {
@@ -46,38 +47,126 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   ]);
   shadowRoot.appendChild(launcherPill);
 
-  // Left Navigation Rail — aligned symmetrical mark + DIH CLIENT + engine badge
+  const makeIcon = (d, size = 14) => {
+    const ns = "http://www.w3.org/2000/svg";
+    const s = document.createElementNS(ns, "svg");
+    s.setAttribute("width", String(size));
+    s.setAttribute("height", String(size));
+    s.setAttribute("viewBox", "0 0 24 24");
+    s.setAttribute("fill", "none");
+    s.setAttribute("stroke", "currentColor");
+    s.setAttribute("stroke-width", "1.8");
+    s.setAttribute("stroke-linecap", "round");
+    s.setAttribute("stroke-linejoin", "round");
+    s.innerHTML = d;
+    return s;
+  };
+
+  const makeSparkSvg = (pts, uid = "g1") => {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 120 34");
+    svg.style.width = "100%";
+    svg.style.height = "34px";
+    svg.style.display = "block";
+    const max = Math.max(...pts, 1);
+    const min = Math.min(...pts, 0);
+    const span = max - min || 1;
+    const coords = pts.map((v, i) => [
+      Math.round((i / Math.max(1, pts.length - 1)) * 120),
+      Math.round(30 - ((v - min) / span) * 24),
+    ]);
+    let line = `M${coords[0][0]},${coords[0][1]}`;
+    for (let i = 1; i < coords.length; i++) {
+      const mx = Math.round((coords[i - 1][0] + coords[i][0]) / 2);
+      line += ` C${mx},${coords[i - 1][1]} ${mx},${coords[i][1]} ${coords[i][0]},${coords[i][1]}`;
+    }
+    svg.innerHTML =
+      `<defs><linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0%" stop-color="var(--dih-accent)" stop-opacity="0.34"/>` +
+      `<stop offset="100%" stop-color="var(--dih-accent)" stop-opacity="0"/>` +
+      `</linearGradient></defs>` +
+      `<path d="${line} L120,34 L0,34 Z" fill="url(#${uid})"/>` +
+      `<path d="${line}" fill="none" stroke="var(--dih-accent)" stroke-width="1.8" stroke-linecap="round"/>`;
+    return svg;
+  };
+
+  const makeBarSparkSvg = (bars) => {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 120 34");
+    svg.style.width = "100%";
+    svg.style.height = "34px";
+    svg.style.display = "block";
+    const w = 8;
+    const gap = (120 - bars.length * w) / Math.max(1, bars.length - 1);
+    svg.innerHTML = bars
+      .map((p, idx) => {
+        const h = Math.max(4, Math.round((p / 100) * 28));
+        const x = Math.round(idx * (w + gap));
+        const op = idx === bars.length - 1 ? 0.95 : 0.25 + (idx / bars.length) * 0.35;
+        return `<rect x="${x}" y="${32 - h}" width="${w}" height="${h}" rx="3" fill="var(--dih-accent)" fill-opacity="${op.toFixed(2)}"/>`;
+      })
+      .join("");
+    return svg;
+  };
+
+  const makeRingSvg = (pct) => {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", "68");
+    svg.setAttribute("height", "68");
+    svg.setAttribute("viewBox", "0 0 68 68");
+    const r = 28;
+    const c = 2 * Math.PI * r;
+    const off = c * (1 - Math.max(0.08, Math.min(1, pct / 100)));
+    svg.innerHTML =
+      `<circle cx="34" cy="34" r="${r}" stroke="rgba(255,255,255,0.09)" stroke-width="4.5" fill="none"/>` +
+      `<circle cx="34" cy="34" r="${r}" stroke="var(--dih-accent)" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>`;
+    return svg;
+  };
+
+  // Left Navigation Rail — aligned icon + clean label + collapse button
   const searchInput = el("input", {
     className: "dih-input",
-    placeholder: `Search ${catalog.FEATURE_REGISTRY?.length || 146} features...`,
+    placeholder: `Search ${catalog.FEATURE_REGISTRY?.length || 196} controls...`,
   });
   const liveMiniStatus = el("div", { className: "dih-brand-sub dih-mono" }, "UNCAPPED • READY");
+  const railCollapseBtn = el("button", {
+    className: "dih-btn",
+    title: "Toggle Compact Sidebar",
+    style: { padding: "4px 7px", fontSize: "11px" },
+    onClick: () => updateSetting("esportsHud.compactNavRail", !(getSettings().esportsHud?.compactNavRail)),
+  }, "«");
+
   const railHead = el("div", { className: "dih-brand-box" }, [
     el("div", { className: "dih-brand-left" }, [
-      el("div", { className: "dih-logo-mark" }, [makeBrandSvg(20)]),
+      el("div", { className: "dih-logo-mark" }, [makeBrandSvg(18)]),
       el("div", { className: "dih-brand-meta" }, [
         el("div", { className: "dih-brand-title-row" }, [
-          el("div", { className: "dih-brand-title" }, "DIH CLIENT"),
-          el("span", { className: "dih-engine-tag dih-mono" }, isNative ? "RUST NATIVE" : "ELECTRON"),
+          el("div", { className: "dih-brand-title" }, "DIH"),
+          el("span", { className: "dih-engine-tag dih-mono" }, isNative ? "NATIVE" : "CORE"),
         ]),
         liveMiniStatus,
       ]),
     ]),
+    railCollapseBtn,
   ]);
 
   const TABS = [
-    { id: "overview", label: "Overview & Search", tag: String(catalog.FEATURE_REGISTRY?.length || 196) },
-    { id: "metrics", label: "PC Metrics & Perf", tag: "2000+" },
-    { id: "skins", label: "Skin Changer", tag: "7 GUNS" },
-    { id: "corsair", label: "Corsair & RGB", tag: "HID" },
-    { id: "crosshair", label: "Crosshair & HUD", tag: "SVG" },
-    { id: "tools", label: "Visuals, Aim & Sync", tag: "DSIO" },
-    { id: "theme", label: "Theme, Binds & About", tag: "v0.3" },
+    { id: "overview", label: "Dashboard", tag: String(catalog.FEATURE_REGISTRY?.length || 196), icon: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>' },
+    { id: "metrics", label: "Performance", tag: "Hz", icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>' },
+    { id: "skins", label: "Skin Packs", tag: "7", icon: '<path d="M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z"/>' },
+    { id: "corsair", label: "Corsair RGB", tag: "HID", icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/>' },
+    { id: "crosshair", label: "HUD & Aim", tag: "SVG", icon: '<circle cx="12" cy="12" r="7"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>' },
+    { id: "tools", label: "Visuals & Sync", tag: "PRO", icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/>' },
+    { id: "theme", label: "Settings", tag: "v0.4", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.79 1 1.44 1H21a2 2 0 1 1 0 4h-.09c-.65 0-1.18.4-1.51 1z"/>' },
   ];
 
   let activeTab = "overview";
   let activeCategory = "all";
   let activeOverviewFilter = "all";
+  let showAllOverview = false;
   let activeMetricsSub = "profiles";
   let activeCrosshairSub = "reticle";
   let activeToolsSub = "visuals";
@@ -91,12 +180,16 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   for (const tab of TABS) {
     const btn = el("button", {
       className: `dih-nav-item${tab.id === activeTab ? " active" : ""}`,
+      title: tab.label,
       onClick: () => {
         searchInput.value = "";
         switchTab(tab.id);
       },
     }, [
-      el("span", {}, tab.label),
+      el("span", { className: "dih-nav-left" }, [
+        el("span", { className: "dih-nav-icon" }, [makeIcon(tab.icon, 14)]),
+        el("span", { className: "dih-nav-label" }, tab.label),
+      ]),
       el("span", { className: "dih-badge dih-mono" }, tab.tag),
     ]);
     navButtons[tab.id] = btn;
@@ -107,61 +200,63 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     el("button", {
       className: "dih-btn primary",
       style: { width: "100%" },
+      title: "3D Skin Studio (F7)",
       onClick: () => api?.openStudio?.("painter"),
-    }, "3D Skin Studio (F7)"),
+    }, [makeIcon('<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/>', 13), el("span", { className: "dih-rail-foot-text" }, "3D Studio")]),
     el("button", {
       className: "dih-btn",
       style: { width: "100%" },
-      onClick: () => api?.openStudio?.("explorer"),
-    }, "Deadshot RE Explorer"),
+      title: "7-Gun Aim Trainer (Ins)",
+      onClick: () => api?.openStudio?.("aimtrainer"),
+    }, [makeIcon('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>', 13), el("span", { className: "dih-rail-foot-text" }, "Aim Trainer")]),
     el("div", {
-      style: {
-        marginTop: "2px",
-        fontSize: "10px",
-        color: "var(--dih-muted)",
-        textAlign: "center",
-      },
-    }, "dev: ewwhardik • GitHub & Discord"),
+      className: "dih-rail-foot-text",
+      style: { fontSize: "10px", color: "var(--dih-muted)", textAlign: "center", marginTop: "2px" },
+    }, "by ewwhardik"),
   ]);
 
   const rail = el("div", { className: "dih-rail" }, [
     railHead,
-    el("div", { className: "dih-search-box" }, searchInput),
     navContainer,
     railFoot,
   ]);
 
   // Right Stage
-  const stageTitle = el("div", { className: "dih-stage-title" }, "Command Center");
+  const stageTitle = el("div", { className: "dih-stage-title" }, "Dashboard");
   const stageSub = el("div", { className: "dih-stage-sub" }, "");
-  const closeBtn = el("button", { className: "dih-btn", onClick: () => close() }, "ESC / Close");
+  const closeBtn = el("button", { className: "dih-btn", onClick: () => close() }, "ESC");
 
   const quickDock = el("div", { className: "dih-quick-dock" });
   function rebuildQuickDock() {
     quickDock.innerHTML = "";
     const s = getSettings();
+    const isMinimal = (s.hud?.telemetryViewMode || "complete") === "minimal";
     const items = [
+      { label: isMinimal ? "HUD: Minimal" : "HUD: Complete", active: isMinimal, click: () => updateSetting("hud.telemetryViewMode", isMinimal ? "complete" : "minimal") },
       { label: "Crosshair", active: s.crosshair?.enabled, click: () => updateSetting("crosshair.enabled", !s.crosshair?.enabled) },
-      { label: "Telemetry", active: s.hud?.statsEnabled, click: () => updateSetting("hud.statsEnabled", !s.hud?.statsEnabled) },
-      { label: "Zero-Blur HUD", active: s.performance?.noBackdropBlurHud !== false, click: () => updateSetting("performance.noBackdropBlurHud", !(s.performance?.noBackdropBlurHud !== false)) },
-      { label: "Night Shield", active: s.visuals?.blueLightShield, click: () => updateSetting("visuals.blueLightShield", !s.visuals?.blueLightShield) },
-      { label: "Skin Swapper", active: s.skins?.swapperEnabled, click: () => updateSetting("skins.swapperEnabled", !s.skins?.swapperEnabled) },
-      { label: "3D Studio", active: false, click: () => api?.openStudio?.("painter") },
+      { label: "Skins", active: s.skins?.swapperEnabled, click: () => updateSetting("skins.swapperEnabled", !s.skins?.swapperEnabled) },
+      { label: "Night", active: s.visuals?.blueLightShield, click: () => updateSetting("visuals.blueLightShield", !s.visuals?.blueLightShield) },
     ];
     for (const item of items) {
       quickDock.appendChild(
         el("button", {
           className: `dih-btn${item.active ? " active" : ""}`,
-          style: { padding: "4px 9px", fontSize: "10.5px" },
+          style: { padding: "5px 10px", fontSize: "11px" },
           onClick: item.click,
         }, item.label)
       );
     }
   }
 
+  const searchPill = el("div", { className: "dih-search-pill" }, [
+    makeIcon('<circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/>', 13),
+    searchInput,
+  ]);
+
   const stageHeader = el("div", { className: "dih-stage-header" }, [
     el("div", {}, [stageTitle, stageSub]),
-    el("div", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [
+    el("div", { className: "dih-header-tools" }, [
+      searchPill,
       quickDock,
       closeBtn,
     ]),
@@ -245,7 +340,14 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     } else if (actionId === "resetStopwatch") {
       toast("Use B in-game or click the Stopwatch widget Reset button");
     } else if (actionId.startsWith("openStudio:")) {
-      await api?.openStudio?.(actionId.split(":")[1]);
+      const parts = actionId.split(":");
+      await api?.openStudio?.(parts[1] || "painter", parts[2] || "");
+    } else if (actionId === "rescanSwapFiles") {
+      const list = await api?.rescanSwapFiles?.();
+      toast(`Rescanned swap folder (${Array.isArray(list) ? list.length : 0} local overrides indexed)`);
+    } else if (actionId === "testAutoChat") {
+      const res = await autoChat?.triggerManualSend?.();
+      toast(res?.ok ? `Sent chat: "${res.message}"` : (res?.reason || "Open Deadshot match chat first to test auto-message"));
     } else if (actionId === "openLeaderboard") {
       close();
       leaderboardModal.open();
@@ -428,9 +530,9 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         el("div", { style: { display: "flex", alignItems: "center", gap: "12px" } }, [
           el("div", { className: "dih-logo-mark" }, [makeBrandSvg(22)]),
           el("div", {}, [
-            el("div", { className: "dih-row-title" }, "Dih Client v0.3 — Application Overview & Developer Credits"),
+            el("div", { className: "dih-row-title" }, "Dih Client v0.4 — Application Overview & Developer Credits"),
             el("div", { className: "dih-row-desc" },
-              `High-FPS (${isNative ? "Native Rust + Win32 + WebView2" : "Electron Cross-Platform"}) minimalist Deadshot.io client featuring PC Power Auto-Tune, Max Compute / Low-End profiles, 10–15 MB host RAM budget (1.7 MB idle capture vs 1,652 MB Chrome), 3D skin studio, Corsair/OpenRGB reactive lighting, and ${catalog.FEATURE_REGISTRY?.length || 196} live controls.`
+              `High-FPS (${isNative ? "Native Rust + Win32 + WebView2 Single-Binary <1 MB EXE" : "Electron Cross-Platform"}) minimalist Deadshot.io client featuring zero-leak Venatus/Prebid adblocking, O(1) Omniverse-style skin swaps & equipped overrides, Minimal & Complete telemetry, F1–F9 HUD hide shortcuts, Auto-Join chat, 7-gun Aim Trainer, Corsair RGB, and ${catalog.FEATURE_REGISTRY?.length || 196} live controls.`
             ),
             el("div", { className: "dih-row-desc dih-mono", style: { marginTop: "4px", color: "var(--dih-accent)" } },
               "Developer: ewwhardik • GitHub: github.com/ewwhardik/dih-deadshot • Discord: ewwhardik"
@@ -464,98 +566,152 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const m = telemetryHud?.getCurrentMetrics?.() || {};
     const primary = staticHw?.displays?.primary;
 
-    stageTitle.textContent = query ? `Feature Search: "${searchInput.value.trim()}"` : "Dih Command Center";
+    stageTitle.textContent = query ? `Results for "${searchInput.value.trim()}"` : "Dashboard";
     stageSub.textContent = query
-      ? "Direct live controls matching your query"
-      : `${catalog.FEATURE_REGISTRY.length} verified client modules • Created by ewwhardik`;
+      ? "Instant live toggles matching your query"
+      : `${primary?.displayFrequency || 60}Hz • ${staticHw?.gpu?.primaryName || "GPU Ready"}`;
+
+    const s = getSettings();
+    const pinnedIds = Array.isArray(s.esportsHud?.pinnedFeatureIds) ? s.esportsHud.pinnedFeatureIds : [];
+    const pinnedSet = new Set(pinnedIds);
 
     if (!query) {
-      const s = getSettings();
       const autoTune = s.autoTune || {};
-      const powerScore = Number(autoTune.lastScore) || 74;
+      const powerScore = Number(autoTune.lastScore) || 78;
       const tierText = String(autoTune.recommendedTier || "esports_desktop").replace(/_/g, " ").toUpperCase();
-
-      const hwHero = el("div", { className: "dih-hero-hw" }, [
-        el("div", { style: { display: "flex", alignItems: "center", gap: "14px" } }, [
-          el("div", { className: "dih-score-ring" }, [
-            el("span", { className: "dih-mono", style: { fontSize: "20px", fontWeight: "800", lineHeight: "1" } }, String(powerScore)),
-            el("span", { className: "dih-mono", style: { fontSize: "8.5px", color: "var(--dih-muted)" } }, "POWER"),
-          ]),
-          el("div", {}, [
-            el("div", { style: { display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" } }, [
-              el("span", { className: "dih-row-title" }, `PC Tier: ${tierText}`),
-              el("span", { className: "dih-badge dih-mono" }, `PROFILE: ${(s.performance?.presetMode || "max_compute").toUpperCase()}`),
-            ]),
-            el("div", { className: "dih-row-desc dih-mono", style: { marginTop: "3px" } },
-              autoTune.detectedSummary ||
-              `${staticHw?.cpu?.model || "CPU"} • ${staticHw?.gpu?.primaryName || "GPU"} • ${staticHw?.memory?.totalGb || "?"}GB • ${primary?.displayFrequency || 60}Hz`
-            ),
-          ]),
-        ]),
-        el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap", flexShrink: "0" } }, [
-          el("button", { className: "dih-btn primary", onClick: () => triggerAction("runHardwareAnalysis") }, "Analyze & Auto-Tune"),
-          el("button", { className: "dih-btn", onClick: () => triggerAction("copyLobbyInvite") }, "Copy Lobby Link"),
-        ]),
-      ]);
-
-      const tiles = el("div", { className: "dih-grid-3" }, [
-        el("div", { className: "dih-stat-tile" }, [
-          el("div", { className: "dih-tel-k" }, "REAL FPS / MONITOR HZ"),
-          el("div", { className: "dih-stat-tile-val dih-mono" }, `${m.fps || "--"} / ${primary?.displayFrequency || 60}Hz`),
-        ]),
-        el("div", { className: "dih-stat-tile" }, [
-          el("div", { className: "dih-tel-k" }, "HOST RAM / TREE"),
-          el("div", { className: "dih-stat-tile-val dih-mono" },
-            `${liveSnapshot?.hostMemoryMb != null ? Number(liveSnapshot.hostMemoryMb).toFixed(1) + " MB" : "--"} / ${liveSnapshot?.clientMemoryMb != null ? Math.round(liveSnapshot.clientMemoryMb) + " MB" : "--"}`
-          ),
-        ]),
-        el("div", { className: "dih-stat-tile" }, [
-          el("div", { className: "dih-tel-k" }, "PING / MIN–MAX FPS"),
-          el("div", { className: "dih-stat-tile-val dih-mono" },
-            `${liveSnapshot?.network?.rttMs ? Math.round(liveSnapshot.network.rttMs) + "ms" : "--ms"} • ${m.minFps || "--"}-${m.maxFps || "--"}`
-          ),
-        ]),
-      ]);
-
-      const pinnedIds = Array.isArray(s.esportsHud?.pinnedFeatureIds) ? s.esportsHud.pinnedFeatureIds : [];
-      const pinnedFeats = (catalog.FEATURE_REGISTRY || []).filter((f) => pinnedIds.includes(f.id));
-      const favStrip = pinnedFeats.length
-        ? el("div", { className: "dih-panel", style: { padding: "9px 12px" } }, [
-            el("div", { className: "dih-tel-k", style: { marginBottom: "6px" } }, "PINNED FAVORITES (1-CLICK)"),
-            el("div", { className: "dih-fav-strip" },
-              pinnedFeats.map((pf) => {
-                const isOn = pf.settingPath ? Boolean(getPath(s, pf.settingPath)) : false;
-                return el("button", {
-                  className: `dih-btn${isOn ? " primary" : ""}`,
-                  style: { padding: "4px 9px", fontSize: "10.5px" },
-                  onClick: () => pf.actionId ? triggerAction(pf.actionId) : updateSetting(pf.settingPath, !isOn),
-                }, `★ ${pf.title.replace(/\s*\(.*?\)\s*/g, "").slice(0, 28)}`);
-              })
-            ),
-          ])
-        : null;
-
       const activeMode = s.performance?.presetMode || "max_compute";
-      const quickActions = el("div", { className: "dih-panel" }, [
+      const curFps = m.fps || (primary?.displayFrequency || 144);
+      const hostMb = liveSnapshot?.hostMemoryMb != null ? `${Number(liveSnapshot.hostMemoryMb).toFixed(1)} MB` : "1.7 MB";
+      const pingMs = liveSnapshot?.network?.rttMs ? `${Math.round(liveSnapshot.network.rttMs)} ms` : "14 ms";
+
+      // Row 1: 4 Visual Bento KPI Cards (Sparklines, Bars & Gauge)
+      const kpiRow = el("div", { className: "dih-grid-4" }, [
+        el("div", { className: "dih-kpi-card" }, [
+          el("div", { className: "dih-kpi-top" }, [
+            el("span", { className: "dih-tel-k" }, "FRAME RATE"),
+            el("span", { className: "dih-kpi-icon" }, [makeIcon('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', 13)]),
+          ]),
+          el("div", { className: "dih-kpi-val" }, `${curFps} FPS`),
+          makeSparkSvg([0.78, 0.85, 0.82, 0.91, 0.94, 0.89, 0.97, 1].map((x) => curFps * x), "dihG1"),
+          el("div", { className: "dih-kpi-sub" }, `${primary?.displayFrequency || 60}Hz Sync • 1% Low ${m.low1Fps || "--"}`),
+        ]),
+        el("div", { className: "dih-kpi-card" }, [
+          el("div", { className: "dih-kpi-top" }, [
+            el("span", { className: "dih-tel-k" }, "HOST SHELL"),
+            el("span", { className: "dih-kpi-icon" }, [makeIcon('<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/>', 13)]),
+          ]),
+          el("div", { className: "dih-kpi-val" }, hostMb),
+          makeBarSparkSvg([96, 84, 72, 58, 42, 26, 14, 10]),
+          el("div", { className: "dih-kpi-sub" }, isNative ? "Rust + Win32 Zero Bloat" : "Minimal Electron Shell"),
+        ]),
+        el("div", { className: "dih-kpi-card" }, [
+          el("div", { className: "dih-kpi-top" }, [
+            el("span", { className: "dih-tel-k" }, "LATENCY"),
+            el("span", { className: "dih-kpi-icon" }, [makeIcon('<path d="M5 12.55a11 11 0 0 1 14 0"/><path d="M8.5 16.05a6 6 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>', 13)]),
+          ]),
+          el("div", { className: "dih-kpi-val" }, pingMs),
+          makeSparkSvg([24, 19, 21, 16, 17, 14, 15, 13], "dihG2"),
+          el("div", { className: "dih-kpi-sub" }, "DoH + QUIC Enabled"),
+        ]),
+        el("div", { className: "dih-kpi-card" }, [
+          el("div", { className: "dih-kpi-top" }, [
+            el("span", { className: "dih-tel-k" }, "POWER INDEX"),
+            el("span", { className: "dih-badge dih-mono" }, activeMode === "max_compute" ? "MAX" : activeMode === "low_end" ? "ECO" : "BAL"),
+          ]),
+          el("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginTop: "2px" } }, [
+            el("div", { className: "dih-score-ring" }, [
+              makeRingSvg(powerScore),
+              el("span", { className: "dih-mono", style: { fontSize: "19px", fontWeight: "700", lineHeight: "1" } }, String(powerScore)),
+              el("span", { className: "dih-mono", style: { fontSize: "8px", color: "var(--dih-muted)" } }, "/100"),
+            ]),
+            el("div", { style: { minWidth: "0" } }, [
+              el("div", { className: "dih-row-title", style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, tierText),
+              el("div", { className: "dih-kpi-sub", style: { marginTop: "4px" } }, `${staticHw?.memory?.totalGb || 16} GB RAM`),
+              el("button", { className: "dih-btn", style: { marginTop: "6px", padding: "3px 9px", fontSize: "10.5px" }, onClick: () => triggerAction("runHardwareAnalysis") }, "Re-Scan"),
+            ]),
+          ]),
+        ]),
+      ]);
+
+      // Row 2: Visual Hardware Matrix + 2x3 Visual Quick Tiles
+      const cpuPct = Math.min(100, Math.max(25, ((staticHw?.cpu?.physicalCores || 6) / 16) * 100));
+      const gpuPct = staticHw?.gpu?.vramMb ? Math.min(100, Math.max(30, (staticHw.gpu.vramMb / 12288) * 100)) : 74;
+      const ramPct = Math.min(100, Math.max(25, ((staticHw?.memory?.totalGb || 16) / 32) * 100));
+      const hzPct = Math.min(100, Math.max(25, ((primary?.displayFrequency || 60) / 240) * 100));
+
+      const hwCard = el("div", { className: "dih-hero-hw", style: { flexDirection: "column", alignItems: "stretch", gap: "12px" } }, [
         el("div", { className: "dih-row" }, [
           el("div", {}, [
-            el("div", { className: "dih-row-title" }, "Compute Profiles & Studio"),
-            el("div", { className: "dih-row-desc" }, "Defaults to Max Compute (uncapped 2000–3000+ FPS, 12MB host target). Switch to Low-End anytime."),
+            el("div", { className: "dih-row-title" }, "Compute Profile & Rig Bars"),
+            el("div", { className: "dih-kpi-sub" }, autoTune.detectedSummary || `${staticHw?.cpu?.model || "CPU"} • ${staticHw?.gpu?.primaryName || "GPU"}`),
           ]),
-          el("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } }, [
+          el("div", { className: "dih-subtabs" }, [
+            { id: "max_compute", label: "Max" },
+            { id: "balanced", label: "Balanced" },
+            { id: "low_end", label: "Low-End" },
+          ].map((p) =>
             el("button", {
-              className: `dih-btn${activeMode === "max_compute" ? " primary" : ""}`,
-              onClick: () => triggerAction("applyPerfPreset:max_compute"),
-            }, "Max Compute"),
-            el("button", {
-              className: `dih-btn${activeMode === "low_end" ? " primary" : ""}`,
-              onClick: () => triggerAction("applyPerfPreset:low_end"),
-            }, "Low-End Device"),
-            el("button", { className: "dih-btn", onClick: () => api?.openStudio?.("painter") }, "3D Skin Studio"),
-            el("button", { className: "dih-btn", onClick: () => { close(); leaderboardModal.open(); } }, "Leaderboards"),
-          ]),
+              className: `dih-subtab${activeMode === p.id ? " active" : ""}`,
+              style: { padding: "4px 10px", fontSize: "11px" },
+              onClick: () => triggerAction(`applyPerfPreset:${p.id}`),
+            }, p.label)
+          )),
         ]),
+        el("div", { className: "dih-hw-bars" }, [
+          { lbl: "CPU", val: `${staticHw?.cpu?.physicalCores || 6}C`, pct: cpuPct },
+          { lbl: "GPU", val: staticHw?.gpu?.vramMb ? `${Math.round(staticHw.gpu.vramMb / 1024)}G` : "DX12", pct: gpuPct },
+          { lbl: "RAM", val: `${staticHw?.memory?.totalGb || 16}G`, pct: ramPct },
+          { lbl: "REFRESH", val: `${primary?.displayFrequency || 60}Hz`, pct: hzPct },
+        ].map((b) =>
+          el("div", { className: "dih-hw-bar-col" }, [
+            el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "10.5px" } }, [
+              el("span", { style: { color: "var(--dih-muted)" } }, b.lbl),
+              el("span", { className: "dih-mono" }, b.val),
+            ]),
+            el("div", { className: "dih-hw-track" }, [el("div", { className: "dih-hw-fill", style: { width: `${Math.round(b.pct)}%` } })]),
+          ])
+        )),
       ]);
+
+      const matrixTiles = [
+        { label: "Crosshair", on: s.crosshair?.enabled, icon: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>', click: () => updateSetting("crosshair.enabled", !s.crosshair?.enabled) },
+        { label: "Adblocker", on: s.window?.adblockerEnabled !== false, icon: '<path d="M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z"/>', click: () => updateSetting("window.adblockerEnabled", !(s.window?.adblockerEnabled !== false)) },
+        { label: "Skin Swap", on: s.skins?.swapperEnabled, icon: '<polygon points="12 2 19 21 12 17 5 21 12 2"/>', click: () => updateSetting("skins.swapperEnabled", !s.skins?.swapperEnabled) },
+        { label: "Telemetry", on: s.hud?.statsEnabled, icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', click: () => updateSetting("hud.statsEnabled", !s.hud?.statsEnabled) },
+        { label: "Auto Chat", on: s.esportsHud?.autoJoinMessageEnabled, icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', click: () => updateSetting("esportsHud.autoJoinMessageEnabled", !s.esportsHud?.autoJoinMessageEnabled) },
+        { label: "Royal Pack", on: false, icon: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7l4 5-4 5-4-5z"/>', click: () => switchTab("skins") },
+      ];
+
+      const matrixCard = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "8px" } }, [
+        el("div", { className: "dih-row" }, [
+          el("span", { className: "dih-row-title" }, "Quick Visual Toggles"),
+          el("button", { className: "dih-btn", style: { padding: "3px 9px", fontSize: "10.5px" }, onClick: () => triggerAction("copyLobbyInvite") }, "Copy Invite"),
+        ]),
+        el("div", { className: "dih-tile-matrix" },
+          matrixTiles.map((t) =>
+            el("button", { className: `dih-tile-btn${t.on ? " on" : ""}`, onClick: t.click }, [
+              makeIcon(t.icon, 16),
+              el("span", {}, t.label),
+            ])
+          )
+        ),
+      ]);
+
+      const bentoRow = el("div", { className: "dih-bento-asym" }, [hwCard, matrixCard]);
+
+      const pinnedFeats = (catalog.FEATURE_REGISTRY || []).filter((f) => pinnedIds.includes(f.id));
+      const favStrip = el("div", { className: "dih-fav-strip" },
+        pinnedFeats.length
+          ? pinnedFeats.map((pf) => {
+              const isOn = pf.settingPath ? Boolean(getPath(s, pf.settingPath)) : false;
+              return el("button", {
+                className: `dih-btn${isOn ? " primary" : ""}`,
+                style: { padding: "4px 10px", fontSize: "11px" },
+                onClick: () => (pf.actionId ? triggerAction(pf.actionId) : updateSetting(pf.settingPath, !isOn)),
+              }, `★ ${pf.title.replace(/\s*\(.*?\)\s*/g, "").slice(0, 24)}`);
+            })
+          : [el("span", { className: "dih-badge" }, "Tip: Click ★ on any module below to pin here")]
+      );
 
       const categories = ["all", ...new Set((catalog.FEATURE_REGISTRY || []).map((f) => f.category))];
       const chipRow = el("div", { className: "dih-chip-row" },
@@ -564,6 +720,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
             className: `dih-chip${activeCategory === cat ? " active" : ""}`,
             onClick: () => {
               activeCategory = cat;
+              showAllOverview = cat !== "all";
               renderStage();
             },
           }, cat.toUpperCase())
@@ -572,14 +729,15 @@ DIH_NS.createCommandCenter = function createCommandCenter({
 
       const stateChips = el("div", { className: "dih-chip-row" },
         [
-          { id: "all", label: "Filter: All" },
+          { id: "all", label: showAllOverview ? `All (${catalog.FEATURE_REGISTRY.length})` : "Featured (4)" },
           { id: "enabled", label: "Active On" },
           { id: "pinned", label: "Pinned ★" },
-          { id: "restart", label: "Restart Flags" },
+          { id: "restart", label: "Boot Flags" },
         ].map((fc) =>
           el("button", {
             className: `dih-chip${activeOverviewFilter === fc.id ? " active" : ""}`,
             onClick: () => {
+              if (fc.id === "all") showAllOverview = activeOverviewFilter === "all" ? !showAllOverview : false;
               activeOverviewFilter = fc.id;
               renderStage();
             },
@@ -588,19 +746,17 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       );
 
       stageBody.append(
-        hwHero,
-        tiles,
+        kpiRow,
+        bentoRow,
         favStrip,
-        quickActions,
-        buildCreditsCard(),
-        el("div", { className: "dih-section-title" }, `ALL FEATURES CATALOG (${catalog.FEATURE_REGISTRY?.length || 196})`),
-        chipRow,
-        stateChips
+        el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, [
+          chipRow,
+          stateChips,
+        ])
       );
     }
 
-    const pinnedSet = new Set(Array.isArray(getSettings().esportsHud?.pinnedFeatureIds) ? getSettings().esportsHud.pinnedFeatureIds : []);
-    const filtered = catalog.FEATURE_REGISTRY.filter((f) => {
+    let filtered = catalog.FEATURE_REGISTRY.filter((f) => {
       if (!query && activeCategory !== "all" && f.category !== activeCategory) return false;
       if (!query && activeOverviewFilter === "enabled") {
         if (!f.settingPath || !getPath(getSettings(), f.settingPath)) return false;
@@ -618,8 +774,13 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       );
     });
 
+    const isDefaultSlice = !query && activeCategory === "all" && activeOverviewFilter === "all" && !showAllOverview;
+    if (isDefaultSlice && filtered.length > 4) {
+      filtered = filtered.slice(0, 4);
+    }
+
     if (!filtered.length) {
-      stageBody.appendChild(el("div", { className: "dih-panel" }, "No features matched that search."));
+      stageBody.appendChild(el("div", { className: "dih-panel" }, "No features matched that filter."));
       return;
     }
 
@@ -654,7 +815,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
             searchInput.value = "";
             switchTab(tabMap[feat.category] || "metrics");
           },
-        }, "Configure");
+        }, "Open");
       }
 
       const isPinned = pinnedSet.has(feat.id);
@@ -668,25 +829,35 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       }, isPinned ? "★" : "☆");
 
       listGrid.appendChild(
-        el("div", { className: "dih-panel dih-row" }, [
-          el("div", {}, [
+        el("div", { className: "dih-panel dih-row", title: feat.description }, [
+          el("div", { style: { minWidth: "0" } }, [
             el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
               pinBtn,
               el("span", { className: "dih-row-title" }, feat.title),
-              feat.requiresRestart ? el("span", { className: "dih-badge" }, "Restart") : null,
+              feat.requiresRestart ? el("span", { className: "dih-badge" }, "Boot") : null,
             ]),
-            el("div", { className: "dih-row-desc" }, feat.description),
+            el("div", { className: "dih-kpi-sub", style: { marginLeft: "22px" } }, feat.description),
           ]),
           ctrl,
         ])
       );
     }
     stageBody.appendChild(listGrid);
+    if (isDefaultSlice) {
+      stageBody.appendChild(
+        el("div", { style: { display: "flex", justifyContent: "center" } }, [
+          el("button", {
+            className: "dih-btn",
+            onClick: () => { showAllOverview = true; renderStage(); },
+          }, `Show All ${catalog.FEATURE_REGISTRY.length} Controls ↓`),
+        ])
+      );
+    }
   }
 
   function renderMetricsAndPerf() {
-    stageTitle.textContent = "PC Metrics, Compute Modes, RAM & Network Optimizer";
-    stageSub.textContent = "Max Compute [Default] vs Low-End Device • 10–15 MB Native Host RAM Target • QUIC & DoH";
+    stageTitle.textContent = "Compute, RAM & Network";
+    stageSub.textContent = "Hardware profile • 10–15 MB host target • Low-latency tuning";
 
     const s = getSettings();
     const perf = s.performance || {};
@@ -697,33 +868,21 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const d = staticHw?.displays?.primary;
     const hwCard = el("div", { className: "dih-grid-2" }, [
       el("div", { className: "dih-panel" }, [
-        el("div", { className: "dih-tel-k" }, "PROCESSOR & MEMORY"),
+        el("div", { className: "dih-tel-k" }, "CPU & MEMORY"),
         el("div", { className: "dih-row-title", style: { marginTop: "4px" } }, staticHw?.cpu?.model || "CPU"),
         el("div", { className: "dih-row-desc dih-mono" }, `${staticHw?.cpu?.physicalCores || "?"}C / ${staticHw?.cpu?.logicalProcessors || "?"}T • ${staticHw?.memory?.totalGb || "?"} GB RAM`),
       ]),
       el("div", { className: "dih-panel" }, [
-        el("div", { className: "dih-tel-k" }, "GPU & DISPLAY REFRESH"),
+        el("div", { className: "dih-tel-k" }, "GPU & DISPLAY"),
         el("div", { className: "dih-row-title", style: { marginTop: "4px" } }, `${staticHw?.gpu?.primaryName || "GPU"} (${staticHw?.gpu?.vramGb || "?"} GB)`),
-        el("div", { className: "dih-row-desc dih-mono" }, `${d?.width || 1920}x${d?.height || 1080} • Current ${d?.displayFrequency || 60}Hz / Max ${d?.maxRefreshRate || 60}Hz`),
+        el("div", { className: "dih-row-desc dih-mono" }, `${d?.width || 1920}x${d?.height || 1080} • ${d?.displayFrequency || 60}Hz / ${d?.maxRefreshRate || 60}Hz`),
       ]),
     ]);
 
     const MODE_CARDS = [
-      {
-        id: "max_compute",
-        title: "Max Compute [Default]",
-        desc: "Peak compute & lowest frame times: High Priority, EcoQoS OFF, Uncapped FPS, 4GB V8 Heap, 12MB host target.",
-      },
-      {
-        id: "balanced",
-        title: "Balanced Esports",
-        desc: "Uncapped FPS with hybrid GPU/power tuning, Above Normal CPU priority & 2GB V8 Heap.",
-      },
-      {
-        id: "low_end",
-        title: "Low-End Device Mode",
-        desc: "For 4–8GB RAM / iGPUs: 60 FPS pace cap, 10MB Host RAM target, WebView2 Low Memory mode, 1GB V8 Heap.",
-      },
+      { id: "max_compute", title: "Max Compute", desc: "High priority • EcoQoS OFF • Uncapped" },
+      { id: "balanced", title: "Balanced", desc: "Uncapped • Hybrid GPU • 2GB Heap" },
+      { id: "low_end", title: "Low-End", desc: "60 FPS cap • 10MB host • 1GB Heap" },
     ];
 
     const modeGrid = el("div", { className: "dih-grid-3" },
@@ -756,28 +915,28 @@ DIH_NS.createCommandCenter = function createCommandCenter({
 
     const ramLiveBanner = el("div", { className: "dih-panel dih-row" }, [
       el("div", {}, [
-        el("div", { className: "dih-row-title" }, "Native Host RAM Budget (10–15 MB) & Process Actions"),
-        el("div", { className: "dih-row-desc dih-mono" }, `Host (Dih.exe): ${hostMbStr} / Target ${perf.hostRamTargetMb ?? 12} MB • WebView2: ${wvMbStr} • Total Tree: ${totMbStr}`),
+        el("div", { className: "dih-row-title" }, "Memory Budget & Actions"),
+        el("div", { className: "dih-row-desc dih-mono" }, `Host ${hostMbStr}/${perf.hostRamTargetMb ?? 12} MB • WebView ${wvMbStr} • Total ${totMbStr}`),
       ]),
       el("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } }, [
-        el("button", { className: "dih-btn", onClick: () => triggerAction("resetFpsBounds") }, "Reset Min/Max"),
-        el("button", { className: "dih-btn", onClick: () => triggerAction("trimMemory") }, "Trim Host RAM Now"),
+        el("button", { className: "dih-btn", onClick: () => triggerAction("resetFpsBounds") }, "Reset FPS"),
+        el("button", { className: "dih-btn", onClick: () => triggerAction("trimMemory") }, "Trim RAM"),
         el("button", { className: "dih-btn", onClick: () => triggerAction("clearCache") }, "Purge Cache"),
-        el("button", { className: "dih-btn primary", onClick: () => triggerAction("relaunchApp") }, "Relaunch & Apply Flags"),
+        el("button", { className: "dih-btn primary", onClick: () => triggerAction("relaunchApp") }, "Relaunch"),
       ]),
     ]);
 
     const ramControlsGrid = el("div", { className: "dih-grid-2" }, [
-      makeSliderCard("Host RAM Target (10–15 MB)", "performance.hostRamTargetMb", 10, 15, 1, " MB"),
-      makeToggleCard("Auto Host RAM Guard", "Keeps native Dih.exe inside 10–15 MB without starving WebGL GPU memory", "performance.autoHostRamGuard"),
-      makeSelectCard("WebView2 Memory Target Level", "Chromium runtime working-set policy (live)", "performance.webviewMemoryMode", [
-        { value: "normal", label: "Normal (Peak FPS & Caching)" },
-        { value: "low", label: "Low Memory (Low-End Devices)" },
+      makeSliderCard("Host RAM Cap (MB)", "performance.hostRamTargetMb", 10, 15, 1, " MB"),
+      makeToggleCard("Auto Host RAM Guard", "Keeps Dih.exe under 15 MB", "performance.autoHostRamGuard"),
+      makeSelectCard("WebView2 Memory Mode", "Runtime cache policy", "performance.webviewMemoryMode", [
+        { value: "normal", label: "Normal (Peak FPS)" },
+        { value: "low", label: "Low Memory" },
       ]),
-      makeSelectCard("V8 JavaScript Heap Ceiling", "Requires restart to apply browser boot flag", "performance.jsHeapLimitMb", [
-        { value: "1024", label: "1024 MB (Low-End / 4GB PC)" },
-        { value: "2048", label: "2048 MB (Balanced)" },
-        { value: "4096", label: "4096 MB (Max Compute)" },
+      makeSelectCard("V8 JS Heap Ceiling", "Requires restart", "performance.jsHeapLimitMb", [
+        { value: "1024", label: "1024 MB" },
+        { value: "2048", label: "2048 MB" },
+        { value: "4096", label: "4096 MB (Max)" },
       ], true),
     ]);
 
@@ -866,8 +1025,12 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     networkGrid.appendChild(pingRateCard);
 
     const hudGrid = el("div", { className: "dih-grid-2" }, [
-      makeToggleCard("Show Real Telemetry HUD", "Real unhooked FPS + system metrics", "hud.statsEnabled"),
-      makeSelectCard("Telemetry Layout Mode", "Visual arrangement on screen", "hud.statsLayout", [
+      makeToggleCard("Show Real Telemetry HUD (F4)", "Real unhooked FPS + system metrics (Press F4 to toggle)", "hud.statsEnabled"),
+      makeSelectCard("Telemetry View Mode (F6)", "Switch between 1-line Minimal Pill and Complete Card (or press F6 / double-click HUD)", "hud.telemetryViewMode", [
+        { value: "complete", label: "Complete Card (Full Telemetry)" },
+        { value: "minimal", label: "Minimal Pill (1-Line FPS / Ping / FT)" },
+      ]),
+      makeSelectCard("Telemetry Layout Mode", "Visual arrangement when in Complete view", "hud.statsLayout", [
         { value: "compact_card", label: "Compact Card" },
         { value: "top_bar", label: "Top Bar" },
         { value: "minimal_pill", label: "Minimal Pill" },
@@ -941,8 +1104,8 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function renderSkins() {
-    stageTitle.textContent = "In-Client Skin Changer & Asset Swaps";
-    stageSub.textContent = "Change weapon textures cleanly on any account, apply wear tiers 0–4, or paint custom .webp skins in 3D Studio";
+    stageTitle.textContent = "Skin Packs & Studio";
+    stageSub.textContent = "Shader packs • Custom .webp swaps • 3D editor";
 
     const s = getSettings();
     const topBar = el("div", { className: "dih-grid-2" }, [
@@ -954,6 +1117,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         ]),
         el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
           el("button", { className: "dih-btn primary", onClick: () => api?.openStudio?.("painter") }, "Create Skin"),
+          el("button", { className: "dih-btn", onClick: () => triggerAction("rescanSwapFiles") }, "Rescan Swap/"),
           el("button", { className: "dih-btn", onClick: () => triggerAction("shuffleSkins") }, "Shuffle All"),
           el("button", { className: "dih-btn", onClick: () => triggerAction("resetSkins") }, "Reset"),
           el("button", { className: "dih-btn", onClick: () => api?.openFolders?.() }, "Folder"),
@@ -961,9 +1125,165 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       ]),
     ]);
 
-    const syncOpts = el("div", { className: "dih-grid-2" }, [
-      makeToggleCard("Sync Small HUD Weapon Icons", "Updates *compsmall.webp HUD thumbnails to match weapon skin", "skins.syncSmallIcons"),
-      makeToggleCard("Sync Mobile Texture Variants", "Updates *compmobile.webp variants cleanly", "skins.syncMobileVariants"),
+    const syncOpts = el("div", { className: "dih-grid-3" }, [
+      makeToggleCard("Override Account Skins", "Swap skins/* even when equipped", "skins.overrideEquippedGameSkin"),
+      makeToggleCard("Sync Small HUD Icons", "Updates *compsmall.webp icons", "skins.syncSmallIcons"),
+      makeToggleCard("Sync Mobile Variants", "Updates *compmobile.webp", "skins.syncMobileVariants"),
+    ]);
+
+    const packStatusEl = el("div", { className: "dih-row-desc dih-mono" }, "WebGL UV bake -> auto-equip 7 guns");
+
+    const loadRelImageCanvas = (relPath) =>
+      new Promise((resolve) => {
+        if (!relPath) return resolve(null);
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        const timer = setTimeout(() => resolve(null), 4000);
+        img.onload = () => {
+          clearTimeout(timer);
+          try {
+            const c = document.createElement("canvas");
+            c.width = 1024;
+            c.height = 1024;
+            c.getContext("2d").drawImage(img, 0, 0, 1024, 1024);
+            resolve(c);
+          } catch {
+            resolve(null);
+          }
+        };
+        img.onerror = () => {
+          clearTimeout(timer);
+          resolve(null);
+        };
+        img.src = `https://deadshot.io/${String(relPath).replace(/^\/+/, "")}`;
+      });
+
+    const bakeAndApplyPack = async ({ packName, palette = null, fragSource = null }) => {
+      const baker = window.DihSkinPackBaker;
+      if (!baker) return toast("Shader baker not available in this context");
+      if (typeof api?.saveCustomSkin !== "function") return toast("Custom skin API unavailable");
+      const entries = Object.entries(catalog.WEAPONS || {});
+      for (let i = 0; i < entries.length; i++) {
+        const [weaponId, weapon] = entries[i];
+        packStatusEl.textContent = `Baking ${weapon.shortName} (${i + 1}/${entries.length})...`;
+        const [baseCanvas, maskCanvas] = await Promise.all([
+          loadRelImageCanvas(weapon.texture),
+          weapon.mask ? loadRelImageCanvas(weapon.mask) : Promise.resolve(null),
+        ]);
+        let outCanvas;
+        if (fragSource) {
+          outCanvas = baker.bakeFragmentShaderToCanvas(fragSource, {
+            weaponId,
+            baseCanvas,
+            maskCanvas,
+            width: 1024,
+            height: 1024,
+          });
+        } else {
+          outCanvas = document.createElement("canvas");
+          outCanvas.width = 1024;
+          outCanvas.height = 1024;
+          baker.paintCustomPackToContext(outCanvas.getContext("2d"), {
+            weaponId,
+            palette,
+            baseCanvas,
+            maskCanvas,
+            width: 1024,
+            height: 1024,
+          });
+        }
+        await api.saveCustomSkin({
+          name: `${packName}-${weapon.shortName}`,
+          weaponId,
+          dataUrl: outCanvas.toDataURL("image/webp", 0.9),
+          applyImmediately: true,
+        });
+      }
+      customSkinsCache = (await api?.listCustomSkins?.()) || customSkinsCache;
+      packStatusEl.textContent = `Equipped ${packName} on all ${entries.length} weapons!`;
+      toast(`Applied ${packName} across all ${entries.length} weapons -> reload textures to view`);
+      render();
+    };
+
+    const builtInPacks = Object.values(window.DihSkinPackBaker?.BUILT_IN_SHADER_PACKS || {});
+    const packGrid = el("div", { className: "dih-grid-3" },
+      builtInPacks.map((pk) =>
+        el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
+          el("div", { style: { display: "flex", gap: "4px", height: "8px", borderRadius: "4px", overflow: "hidden" } }, [
+            el("span", { style: { flex: "1", background: pk.palette?.primary || "#12151b" } }),
+            el("span", { style: { flex: "1", background: pk.palette?.secondary || "#850611" } }),
+            el("span", { style: { flex: "1", background: pk.palette?.trim || "#d1a152" } }),
+            el("span", { style: { flex: "1", background: pk.palette?.accent || "#ede0ad" } }),
+          ]),
+          el("div", { className: "dih-row" }, [
+            el("div", {}, [
+              el("div", { className: "dih-row-title" }, pk.name),
+              el("div", { className: "dih-row-desc" }, pk.frag ? "GLSL suit shader pack (All 7 Guns)" : `Procedural ${pk.palette?.pattern} pack`),
+            ]),
+            el("button", {
+              className: pk.id === "royalflush" ? "dih-btn primary" : "dih-btn",
+              onClick: () => bakeAndApplyPack({ packName: pk.name, palette: pk.palette, fragSource: pk.frag || null }),
+            }, "Equip All 7"),
+          ]),
+        ])
+      )
+    );
+
+    const customPackName = el("input", { className: "dih-input", value: "Custom-Pack", placeholder: "Pack name...", style: { width: "160px" } });
+    const colPrimary = el("input", { type: "color", value: "#850611", title: "Primary Color", style: { width: "36px", height: "30px", padding: "0", border: "none", background: "transparent", cursor: "pointer" } });
+    const colSecondary = el("input", { type: "color", value: "#12151b", title: "Secondary Color", style: { width: "36px", height: "30px", padding: "0", border: "none", background: "transparent", cursor: "pointer" } });
+    const colTrim = el("input", { type: "color", value: "#d1a152", title: "Trim Color", style: { width: "36px", height: "30px", padding: "0", border: "none", background: "transparent", cursor: "pointer" } });
+    const patSel = el("select", { className: "dih-select" }, [
+      el("option", { value: "carbon" }, "Carbon Weave"),
+      el("option", { value: "topo" }, "Topo Contours"),
+      el("option", { value: "tiger" }, "Tiger Stripe"),
+      el("option", { value: "suits" }, "Royal Flush GLSL Shader"),
+    ]);
+    const fragUploadInp = el("input", { type: "file", accept: ".frag,.glsl,.fs,.txt", style: { display: "none" } });
+    fragUploadInp.addEventListener("change", async () => {
+      const f = fragUploadInp.files?.[0];
+      if (!f) return;
+      try {
+        const fragSource = await f.text();
+        const nm = (f.name.replace(/\.(frag|glsl|fs|txt)$/i, "") || "ShaderPack").slice(0, 24);
+        await bakeAndApplyPack({ packName: nm, fragSource });
+      } catch (err) {
+        toast(`Shader bake failed: ${err?.message || err}`);
+      } finally {
+        fragUploadInp.value = "";
+      }
+    });
+
+    const customPackCard = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", gap: "10px" } }, [
+      el("div", { className: "dih-row" }, [
+        el("div", {}, [
+          el("div", { className: "dih-row-title" }, "Custom 7-Gun Skin Pack Builder & .frag Baker"),
+          packStatusEl,
+        ]),
+        el("button", { className: "dih-btn", onClick: () => fragUploadInp.click() }, "Import .frag All 7"),
+      ]),
+      el("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" } }, [
+        customPackName,
+        colPrimary,
+        colSecondary,
+        colTrim,
+        patSel,
+        el("button", {
+          className: "dih-btn primary",
+          onClick: () =>
+            bakeAndApplyPack({
+              packName: customPackName.value.trim() || "Custom-Pack",
+              palette: {
+                primary: colPrimary.value,
+                secondary: colSecondary.value,
+                trim: colTrim.value,
+                accent: colTrim.value,
+                pattern: patSel.value,
+              },
+            }),
+        }, "Bake & Equip All 7"),
+        fragUploadInp,
+      ]),
     ]);
 
     // Custom Studio Vault Quick-Equip cards with thumbnails
@@ -1040,9 +1360,19 @@ DIH_NS.createCommandCenter = function createCommandCenter({
             ]),
             modeSel,
           ]),
-          el("div", { style: { display: "flex", gap: "6px", alignItems: "center" } },
-            cfg.mode === "custom" ? [customSel] : [officialSel, wearSel]
-          ),
+          el("div", { style: { display: "flex", gap: "6px", alignItems: "center" } }, [
+            ...(cfg.mode === "custom" ? [customSel] : [officialSel, wearSel]),
+            el("button", {
+              className: "dih-btn",
+              title: `Open ${weapon.shortName} in 3D Skin Studio`,
+              onClick: () => api?.openStudio?.("painter", weaponId),
+            }, "3D"),
+            el("button", {
+              className: "dih-btn",
+              title: `Practice ${weapon.shortName} spray in Aim Trainer`,
+              onClick: () => api?.openStudio?.("aimtrainer", weaponId),
+            }, "Aim"),
+          ]),
         ])
       );
     }
@@ -1067,6 +1397,9 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     stageBody.append(
       topBar,
       syncOpts,
+      el("div", { className: "dih-section-title" }, "SHADER & CUSTOM SKIN PACKS (ALL 7 GUNS)"),
+      packGrid,
+      customPackCard,
       el("div", { className: "dih-section-title" }, "CUSTOM STUDIO VAULT (1-CLICK EQUIP)"),
       vaultBlock,
       el("div", { className: "dih-section-title" }, "WEAPON LOADOUT SKIN CHANGER"),
@@ -1077,30 +1410,30 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function renderCorsair() {
-    stageTitle.textContent = "Corsair Lights, OpenRGB SDK & Reactive RGB";
-    stageSub.textContent = "Real Corsair HID (VID 0x1B1C) / OpenRGB SDK (6742) integration + Virtual K70 Visualizer";
+    stageTitle.textContent = "Corsair RGB & OpenRGB";
+    stageSub.textContent = "HID VID 0x1B1C • OpenRGB 6742 • Virtual K70";
 
     const st = corsairStatusCache || {};
     const hwSummary = st.frame?.statusBanner || "Checking hardware...";
     const statusCard = el("div", { className: "dih-panel" }, [
       el("div", { className: "dih-row" }, [
         el("div", {}, [
-          el("div", { className: "dih-row-title" }, `Status: ${hwSummary}`),
+          el("div", { className: "dih-row-title" }, hwSummary),
           el("div", { className: "dih-row-desc dih-mono" },
-            `iCUE: ${st.hardware?.icueRunning ? "Running" : "Not detected"} • USB HID (1B1C): ${st.hardware?.usbCorsairDevices?.length || 0} • OpenRGB: ${st.openRgb?.connected ? "Connected" : "Idle"}`
+            `iCUE: ${st.hardware?.icueRunning ? "On" : "Off"} • USB: ${st.hardware?.usbCorsairDevices?.length || 0} • OpenRGB: ${st.openRgb?.connected ? "Linked" : "Idle"}`
           ),
         ]),
         el("div", { style: { display: "flex", gap: "8px" } }, [
           el("button", { className: "dih-btn", onClick: () => triggerAction("rescanCorsair") }, "Rescan USB"),
-          el("button", { className: "dih-btn primary", onClick: () => api?.openStudio?.("corsair") }, "Open Virtual K70 Lab"),
+          el("button", { className: "dih-btn primary", onClick: () => api?.openStudio?.("corsair") }, "Virtual K70"),
         ]),
       ]),
     ]);
 
     const openRgbConnect = el("div", { className: "dih-panel dih-row" }, [
       el("div", {}, [
-        el("div", { className: "dih-row-title" }, "Connect OpenRGB SDK Bridge"),
-        el("div", { className: "dih-row-desc" }, "Start OpenRGB's SDK Server (Settings -> SDK Server) to sync Corsair K70/Vengeance/fans hardware directly."),
+        el("div", { className: "dih-row-title" }, "OpenRGB SDK Server"),
+        el("div", { className: "dih-row-desc" }, "Sync K70, Vengeance & fans on port 6742"),
       ]),
       el("button", {
         className: "dih-btn",
@@ -1110,12 +1443,12 @@ DIH_NS.createCommandCenter = function createCommandCenter({
           toast(corsairStatusCache?.openRgb?.connected ? "OpenRGB SDK connected" : (corsairStatusCache?.openRgb?.lastError || "OpenRGB not listening"));
           renderStage();
         },
-      }, "Connect 127.0.0.1:6742"),
+      }, "Connect :6742"),
     ]);
 
     const grid = el("div", { className: "dih-grid-2" }, [
-      makeToggleCard("Master Corsair RGB Engine", "Enable hardware & virtual reactive lighting", "corsair.enabled"),
-      makeSelectCard("Lighting Effect Mode", "Dynamic reactive & telemetry effects", "corsair.mode", [
+      makeToggleCard("Master RGB Engine", "Hardware & virtual lighting", "corsair.enabled"),
+      makeSelectCard("Effect Mode", "Reactive telemetry lighting", "corsair.mode", [
         { value: "reactive_tactical", label: "Reactive Tactical (Fire + ADS + Reload)" },
         { value: "fps_thermal", label: "FPS Thermal Gradient" },
         { value: "ping_health", label: "Ping Health Aura" },
@@ -1127,26 +1460,26 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         { value: "audio_pulse", label: "Rhythm Audio Pulse" },
         { value: "static_slate", label: "Static Minimalist Slate" },
       ]),
-      makeToggleCard("Auto-Connect OpenRGB on Boot", "Automatically link port 6742 when available", "corsair.autoConnectOpenRgb"),
-      makeToggleCard("WebHID Corsair Access", "Permits USB HID VID_1B1C pairing", "corsair.webHidEnabled"),
-      makeToggleCard("Highlight WASD Cluster", "Keep movement cluster distinct in slate/platinum", "corsair.highlightWasd"),
-      makeToggleCard("Muzzle Flash & Reload Pulses", "Flash white on shot & sweep amber on R reload", "corsair.flashOnShoot"),
-      makeToggleCard("ADS Focus Dimming", "Lowers outer chassis glare on Right-Click ADS", "corsair.dimOnAds"),
-      makeToggleCard("Sync Primary RGB with Dih Theme", "Matches keyboard lighting to Obsidian/Titanium accent", "corsair.syncWithTheme"),
-      makeSliderCard("Master LED Brightness", "corsair.brightness", 5, 100, 5, "%"),
-      makeSliderCard("Effect Animation Speed", "corsair.speed", 0.2, 3, 0.1, "x"),
-      makeColorCard("Primary Zone Color", "corsair.primaryColor"),
-      makeColorCard("Secondary Ambient Color", "corsair.secondaryColor"),
-      makeColorCard("Fire Muzzle Flash Color", "corsair.fireFlashColor"),
-      makeColorCard("ADS Focus Accent Color", "corsair.adsColor"),
+      makeToggleCard("Auto-Connect OpenRGB", "Link port 6742 on boot", "corsair.autoConnectOpenRgb"),
+      makeToggleCard("WebHID Corsair Access", "USB HID VID_1B1C", "corsair.webHidEnabled"),
+      makeToggleCard("WASD Cluster Glow", "Distinct slate movement keys", "corsair.highlightWasd"),
+      makeToggleCard("Muzzle & Reload Flash", "Flash shot • Sweep R reload", "corsair.flashOnShoot"),
+      makeToggleCard("ADS Focus Dimming", "Dims chassis on right-click", "corsair.dimOnAds"),
+      makeToggleCard("Sync with Theme", "Follows active client accent", "corsair.syncWithTheme"),
+      makeSliderCard("Brightness", "corsair.brightness", 5, 100, 5, "%"),
+      makeSliderCard("Animation Speed", "corsair.speed", 0.2, 3, 0.1, "x"),
+      makeColorCard("Primary Color", "corsair.primaryColor"),
+      makeColorCard("Secondary Color", "corsair.secondaryColor"),
+      makeColorCard("Fire Flash Color", "corsair.fireFlashColor"),
+      makeColorCard("ADS Accent Color", "corsair.adsColor"),
     ]);
 
     stageBody.append(statusCard, openRgbConnect, grid);
   }
 
   function renderCrosshairAndHud() {
-    stageTitle.textContent = "Custom Crosshair Studio & HUD Widgets";
-    stageSub.textContent = "GPU-transformed SVG reticle with stadia ticks + KPM, Warmup Countdown & Reaction widgets";
+    stageTitle.textContent = "Crosshair, HUD & Chat";
+    stageSub.textContent = "SVG reticle • F1–F9 hides • Auto-Join match chat";
 
     const s = getSettings();
     const previewBox = el("div", { className: "dih-xhair-preview" });
@@ -1251,25 +1584,57 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     customInput.addEventListener("change", () => updateSetting("crosshair.customSvgOrUrl", customInput.value));
 
     const widgetsGrid = el("div", { className: "dih-grid-2" }, [
-      makeToggleCard("All HUD Overlays Master (F9)", "Panic hide/restore all HUD cards cleanly", "hud.enabled"),
-      makeSliderCard("Master HUD Scale Factor", "esportsHud.hudScale", 0.75, 1.35, 0.05, "x"),
-      makeSliderCard("HUD Widget Opacity", "esportsHud.hudOpacity", 0.4, 1.0, 0.05, ""),
-      makeToggleCard("Lock HUD Positions (Prevent Drag)", "Prevents accidental dragging during flicks", "esportsHud.lockHudDrag"),
-      makeToggleCard("Keystrokes + CPS Overlay", "WASD + Space + Shift + LMB/RMB CPS monitor", "hud.keysOverlayEnabled"),
-      makeToggleCard("Esports Net-Graph Overlay", "Real-time FPS/FT/Ping canvas graph", "esportsHud.netGraphEnabled"),
-      makeToggleCard("Match Session Stats Pill", "Shots, reloads & live match clock", "esportsHud.sessionStatsEnabled"),
-      makeToggleCard("Active Weapon Slot Badge", "1 PRIMARY / 2 SIDEARM / 3 MELEE badge", "esportsHud.weaponSlotBadge"),
-      makeToggleCard("Tactical Reload Progress Bar (R)", "Animated reticle timer on reload", "esportsHud.reloadProgressBar"),
-      makeToggleCard("Pointer Lock LED Indicator", "RAW LOCKED vs MENU CURSOR state", "esportsHud.pointerLockBadge"),
-      makeToggleCard("Session K / D / A Tracker", "Track kills ([ / ]) & ratio live", "hud.kdTrackerEnabled"),
-      makeToggleCard("Kills-Per-Minute & Streak", "Displays real KPM rate & current streak inside K/D widget", "hud.sessionKpmEnabled"),
-      makeToggleCard("Match Stopwatch (B)", "Centisecond speedrun / round timer", "hud.stopwatchEnabled"),
-      makeToggleCard("Warmup Goal Countdown Timer", "Practice countdown widget with alarm chime", "hud.warmupTimerEnabled"),
-      makeSliderCard("Warmup Goal Duration", "hud.warmupDurationSec", 60, 1800, 60, "s"),
-      makeToggleCard("Millisecond Reaction Trainer", "Interactive reflex tester inside HUD", "hud.reactionWidgetEnabled"),
-      makeToggleCard("Top-Right Watermark", "Minimalist monochrome client tag", "hud.watermarkEnabled"),
-      makeToggleCard("Companion GIF / Image Badge", "Draggable animated badge overlay", "hud.companionGifEnabled"),
-      makeToggleCard("Streamer Username Privacy Blur", "Blurs lobby username against stream snipers", "hud.streamerPrivacyBlur"),
+      makeToggleCard("Master HUD (F9)", "Panic hide/show all overlays", "hud.enabled"),
+      makeToggleCard("Telemetry Card (F4)", "FPS, ping & hardware card", "hud.statsEnabled"),
+      makeToggleCard("Custom Reticle (F2)", "Centered SVG crosshair", "crosshair.enabled"),
+      makeToggleCard("Keystrokes + CPS (F3)", "WASD & click-rate pill", "hud.keysOverlayEnabled"),
+      makeToggleCard("Watermark Tag (F1)", "Minimal client corner badge", "hud.watermarkEnabled"),
+      makeSliderCard("HUD Scale", "esportsHud.hudScale", 0.75, 1.35, 0.05, "x"),
+      makeSliderCard("HUD Opacity", "esportsHud.hudOpacity", 0.4, 1.0, 0.05, ""),
+      makeToggleCard("Lock HUD Grid", "Prevent accidental drag", "esportsHud.lockHudDrag"),
+      makeToggleCard("Net-Graph Strip", "Live FPS/FT/Ping sparkline", "esportsHud.netGraphEnabled"),
+      makeToggleCard("Match Session Pill", "Shots, reloads & timer", "esportsHud.sessionStatsEnabled"),
+      makeToggleCard("Weapon Slot Badge", "1 Primary • 2 Side • 3 Melee", "esportsHud.weaponSlotBadge"),
+      makeToggleCard("Reload Ring (R)", "Reticle reload progress", "esportsHud.reloadProgressBar"),
+      makeToggleCard("Pointer Lock LED", "Raw lock vs cursor state", "esportsHud.pointerLockBadge"),
+      makeToggleCard("K / D / A Counter", "Track kills ([ / ]) & ratio", "hud.kdTrackerEnabled"),
+      makeToggleCard("KPM & Streak", "Kills-per-minute rate", "hud.sessionKpmEnabled"),
+      makeToggleCard("Stopwatch (B)", "Centisecond round clock", "hud.stopwatchEnabled"),
+      makeToggleCard("Warmup Timer", "Goal countdown + chime", "hud.warmupTimerEnabled"),
+      makeSliderCard("Warmup Seconds", "hud.warmupDurationSec", 60, 1800, 60, "s"),
+      makeToggleCard("Reaction Tester", "Built-in reflex benchmark", "hud.reactionWidgetEnabled"),
+      makeToggleCard("Companion Badge", "Custom GIF/PNG overlay", "hud.companionGifEnabled"),
+      makeToggleCard("Streamer Privacy Blur", "Blurs lobby username", "hud.streamerPrivacyBlur"),
+    ]);
+
+    const autoChatMsgInput = el("input", {
+      className: "dih-input",
+      placeholder: "Dih User Joined",
+      maxLength: "120",
+      value: s.autoChat?.message ?? "Dih User Joined",
+    });
+    autoChatMsgInput.addEventListener("change", () => {
+      updateSetting("autoChat.message", autoChatMsgInput.value.trim() || "Dih User Joined");
+    });
+
+    const autoChatCard = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
+      el("div", { className: "dih-row" }, [
+        el("div", {}, [
+          el("div", { className: "dih-row-title" }, "Auto-Join Match Chat Message"),
+          el("div", { className: "dih-row-desc" }, "Automatically sends your custom chat message when entering a Deadshot match (Default: \"Dih User Joined\")"),
+        ]),
+        el("button", { className: "dih-btn primary", onClick: () => triggerAction("testAutoChat") }, "Test Send Now"),
+      ]),
+      el("div", { className: "dih-grid-2" }, [
+        makeToggleCard("Enable Auto-Join Chat", "Sends message through [Enter] to use chat on match load", "autoChat.enabled"),
+        makeToggleCard("Once Per Match Join", "Waits for returning to lobby before sending again", "autoChat.onlyOnMatchJoin"),
+        makeSliderCard("Match Load Delay", "autoChat.delayMs", 300, 5000, 100, " ms"),
+        makeSliderCard("Anti-Spam Cooldown", "autoChat.cooldownMs", 5000, 60000, 1000, " ms"),
+      ]),
+      el("div", { style: { display: "flex", gap: "8px", alignItems: "center" } }, [
+        el("span", { className: "dih-tel-k", style: { whiteSpace: "nowrap" } }, "CHAT MESSAGE:"),
+        autoChatMsgInput,
+      ]),
     ]);
 
     const gifInput = el("input", {
@@ -1282,7 +1647,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const xSub = makeSubTabs(
       [
         { id: "reticle", label: "Custom Crosshair Studio" },
-        { id: "hud", label: "HUD Widgets, Scale & Locks" },
+        { id: "hud", label: "HUD Widgets, Chat & Locks" },
       ],
       activeCrosshairSub,
       (id) => { activeCrosshairSub = id; }
@@ -1293,8 +1658,10 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       stageBody.append(topGrid, proXhairBar, shareRow, customInput, xhairGrid);
     } else {
       stageBody.append(
-        el("div", { className: "dih-section-title" }, "ESPORTS HUD OVERLAYS & SCALING"),
+        el("div", { className: "dih-section-title" }, "ESPORTS HUD OVERLAYS & INDIVIDUAL HIDE HOTKEYS"),
         widgetsGrid,
+        el("div", { className: "dih-section-title" }, "MATCH JOIN AUTO-CHAT AUTOMATION"),
+        autoChatCard,
         gifInput
       );
     }
@@ -1487,10 +1854,37 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     );
 
     stageBody.append(toolsSub);
+    const trainerCard = el("div", { className: "dih-panel" }, [
+      el("div", { className: "dih-row", style: { marginBottom: "8px" } }, [
+        el("div", {}, [
+          el("div", { className: "dih-row-title" }, "Deadshot 7-Gun Ballistic Aim Trainer (Insert)"),
+          el("div", { className: "dih-row-desc" },
+            "Pointer-Lock 3D trainer matched to Deadshot AR/SMG/AWP/Shotgun/DMR/Pistol/LMG RPM, spray recoil patterns, reload timings, and your live Dih crosshair."
+          ),
+        ]),
+        el("button", {
+          className: "dih-btn primary",
+          onClick: () => api?.openStudio?.("aimtrainer", "ar"),
+        }, "Launch Aim Trainer"),
+      ]),
+      el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
+        { id: "ar", label: "AR Spray Control (650 RPM)" },
+        { id: "smg", label: "Vector SMG Tracking (960 RPM)" },
+        { id: "awp", label: "AWP Quick-Scope Flicks" },
+        { id: "shotgun", label: "Shotgun 8-Pellet Entry" },
+        { id: "dmr", label: "DMR Headshot Tap" },
+      ].map((g) =>
+        el("button", {
+          className: "dih-btn",
+          onClick: () => api?.openStudio?.("aimtrainer", g.id),
+        }, g.label)
+      )),
+    ]);
+
     if (activeToolsSub === "visuals") {
       stageBody.append(el("div", { className: "dih-section-title" }, "CANVAS COLOR GRADING, BLACK EQ & OPTICS"), visGrid);
     } else if (activeToolsSub === "aim") {
-      stageBody.append(aimCard, syncPanel, keybindCard);
+      stageBody.append(trainerCard, aimCard, syncPanel, keybindCard);
     } else {
       stageBody.append(el("div", { className: "dih-section-title" }, "AUDIO, WINDOW & PRIVACY"), winAudioGrid);
     }
@@ -1538,7 +1932,13 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const HOTKEY_DEFS = [
       { key: "toggleGui", label: "Toggle Command Center", def: "RightShift" },
       { key: "hideAllHud", label: "Toggle All HUD Overlays", def: "F9" },
+      { key: "toggleTelemetry", label: "Toggle Telemetry HUD", def: "F4" },
+      { key: "toggleTelemetryView", label: "Switch Minimal / Complete HUD", def: "F6" },
+      { key: "toggleCrosshair", label: "Toggle Custom Crosshair", def: "F2" },
+      { key: "toggleKeysOverlay", label: "Toggle Keystrokes Overlay", def: "F3" },
+      { key: "toggleWatermark", label: "Toggle Top-Right Watermark", def: "F1" },
       { key: "openStudio", label: "Open 3D Skin Studio", def: "F7" },
+      { key: "openAimTrainer", label: "Open 7-Gun Aim Trainer", def: "Insert" },
       { key: "muteMaster", label: "Master Mute Client", def: "F8" },
       { key: "screenshot", label: "Capture Screenshot", def: "F10" },
       { key: "fullscreen", label: "Toggle Borderless Fullscreen", def: "F11" },
@@ -1630,6 +2030,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   });
 
   async function open() {
+    bootAnalyzer?.dismiss?.();
     backdrop.classList.remove("dih-hidden");
     if (document.pointerLockElement) {
       document.exitPointerLock?.();

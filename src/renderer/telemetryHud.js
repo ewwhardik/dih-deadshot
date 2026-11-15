@@ -8,14 +8,31 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
   const { el, makeDraggable, readDeadshotSettings, getHostApi } = DIH_NS.utils;
 
   const root = el("div", { className: "dih-card dih-telemetry" });
+  root.addEventListener("dblclick", async () => {
+    const cur = getSettings().hud?.telemetryViewMode === "minimal" ? "minimal" : "complete";
+    await getHostApi()?.setSetting?.("hud.telemetryViewMode", cur === "minimal" ? "complete" : "minimal");
+  });
+  const viewSwitchBtn = el("button", {
+    className: "dih-mini-btn",
+    title: "Switch Minimal / Complete Telemetry (F6)",
+    style: { padding: "1px 5px", fontSize: "9px", marginLeft: "4px" },
+    onClick: async (e) => {
+      e.stopPropagation();
+      const cur = getSettings().hud?.telemetryViewMode === "minimal" ? "minimal" : "complete";
+      await getHostApi()?.setSetting?.("hud.telemetryViewMode", cur === "minimal" ? "complete" : "minimal");
+    },
+  }, "MIN");
   const header = el("div", { className: "dih-tel-header" }, [
     el("div", { className: "dih-tel-brand" }, [
       el("span", { className: "dih-tel-brand-dot" }),
       el("span", {}, staticHw?.nativeBackend ? "DIH NATIVE" : "DIH TELEMETRY"),
     ]),
-    el("span", { className: "dih-mono", style: { fontSize: "10px", color: "var(--dih-muted)" } }),
+    el("div", { style: { display: "flex", alignItems: "center", gap: "4px" } }, [
+      el("span", { className: "dih-mono", style: { fontSize: "10px", color: "var(--dih-muted)" } }),
+      viewSwitchBtn,
+    ]),
   ]);
-  const hzEl = header.lastChild;
+  const hzEl = header.lastChild.firstChild;
 
   const fpsValEl = el("span", { className: "dih-mono dih-tel-fps-main" }, "--");
   const fpsWrap = el("div", { style: { display: "flex", alignItems: "baseline" } }, [
@@ -169,16 +186,19 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
     root.classList.toggle("dih-hidden", hidden);
     if (hidden) return;
 
-    const layoutCls = `layout-${hud.statsLayout || "compact_card"}`;
+    const viewMode = hud.telemetryViewMode === "minimal" ? "minimal" : "complete";
+    const effectiveLayout = viewMode === "minimal" ? "minimal_pill" : hud.statsLayout || "compact_card";
+    const layoutCls = `layout-${effectiveLayout}`;
     if (!root.classList.contains(layoutCls)) {
       root.classList.remove("layout-compact_card", "layout-top_bar", "layout-minimal_pill");
       root.classList.add(layoutCls);
     }
 
-    const isBar = hud.statsLayout === "top_bar" || hud.statsLayout === "minimal_pill";
+    const isBar = effectiveLayout === "top_bar" || effectiveLayout === "minimal_pill";
+    const isMinimal = effectiveLayout === "minimal_pill";
     sparkCanvas.classList.toggle("dih-hidden", !hud.showFrametimeGraph || isBar);
-    header.classList.toggle("dih-hidden", hud.statsLayout === "minimal_pill");
-    grid.classList.toggle("dih-hidden", hud.statsLayout === "minimal_pill");
+    header.classList.toggle("dih-hidden", isMinimal);
+    grid.classList.toggle("dih-hidden", isMinimal);
     gpuRow.classList.toggle("dih-hidden", (!hud.showGpu && !hud.showTime && !hud.showDate && !hud.showUptime) || isBar);
 
     fpsWrap.classList.toggle("dih-hidden", !hud.showFps);
@@ -196,9 +216,21 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
     setTextDiff(hzEl, currentHz === maxHz ? `${currentHz}Hz` : `${currentHz}/${maxHz}Hz`);
 
     const parts = [];
-    if (hud.showOnePercentLow) parts.push(`1% ${onePctLow || "--"}`);
-    if (hud.showMinMaxFps && maxFps > 0) parts.push(`${minFps}/${maxFps}`);
-    if (hud.showFrameTime) parts.push(`${avgFrameTimeMs.toFixed(1)}ms`);
+    if (isMinimal) {
+      if (hud.showPing && latestSystem?.network && typeof latestSystem.network.rttMs === "number") {
+        parts.push(`${Math.round(latestSystem.network.rttMs)}ms`);
+      }
+      if (hud.showFrameTime) {
+        parts.push(`${avgFrameTimeMs.toFixed(1)}ft`);
+      }
+      if (hud.showMonitorHz) {
+        parts.push(`${currentHz}Hz`);
+      }
+    } else {
+      if (hud.showOnePercentLow) parts.push(`1% ${onePctLow || "--"}`);
+      if (hud.showMinMaxFps && maxFps > 0) parts.push(`${minFps}/${maxFps}`);
+      if (hud.showFrameTime) parts.push(`${avgFrameTimeMs.toFixed(1)}ms`);
+    }
     setTextDiff(lowsEl, parts.join(" • "));
     lowsEl.classList.toggle("dih-hidden", parts.length === 0);
 

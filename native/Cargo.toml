@@ -1,8 +1,9 @@
 [package]
 name = "dih"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["ewwhardik"]
+license = "UNLICENSED"
 description = "Dih - Native Uncapped Deadshot.io Client (GitHub & Discord: ewwhardik)"
 
 [[bin]]
@@ -10,9 +11,10 @@ name = "Dih"
 path = "src/main.rs"
 
 [profile.release]
-opt-level = 3
-lto = "thin"
+opt-level = "z"
+lto = "fat"
 codegen-units = 1
+panic = "abort"
 strip = "symbols"
 
 [dependencies]

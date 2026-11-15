@@ -103,8 +103,8 @@ DIH_NS.createFilterEngine = function createFilterEngine(shadowRoot, getSettings)
     if (hud.streamerPrivacyBlur) {
       cssRules.push(`#uname, .usernameInput, input[placeholder*="name" i] { filter: blur(6px) !important; transition: filter 120ms; }`);
     }
-    if (vis.cleanHideGamePromo !== false) {
-      cssRules.push(`[id*="banner" i], [id*="promo" i], [class*="ad-container" i], [class*="adBanner" i] { display: none !important; opacity: 0 !important; pointer-events: none !important; }`);
+    if (vis.cleanHideGamePromo !== false || s.window?.adblockerEnabled !== false) {
+      cssRules.push(`#banner-home, #banner-home2, #banner-respawn-1, #banner-respawn-2, [id^="banner-" i], [id*="promo" i], [id*="vntsm" i], [class*="venatus" i], [class*="ad-container" i], [class*="adBanner" i], iframe[name="__pb_locator__"], iframe[src*="vntsm" i], iframe[src*="doubleclick" i], iframe[src*="atmtd" i] { display: none !important; opacity: 0 !important; pointer-events: none !important; width: 0 !important; height: 0 !important; }`);
     }
     if (vis.highContrastCursor) {
       cssRules.push(`body, button, select { cursor: crosshair !important; }`);

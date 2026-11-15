@@ -1,123 +1,97 @@
 use serde_json::Value;
-use std::path::PathBuf;
 
-pub const CATALOG_JSON: &str = include_str!(concat!(env!("OUT_DIR"), "/catalog.json"));
+pub const CATALOG_CORE_JSON: &str = include_str!(concat!(env!("OUT_DIR"), "/catalog_core.json"));
 pub const DIH_LOGO_SVG: &[u8] = include_bytes!("../../swap/promo/dih-logo.svg");
 pub const SCOPE_DOT_SVG: &[u8] = include_bytes!("../../swap/presets/scope-dot.svg");
 pub const SCOPE_MINIMAL_SVG: &[u8] = include_bytes!("../../swap/presets/scope-minimal.svg");
 pub const SCOPE_RANGEFINDER_SVG: &[u8] = include_bytes!("../../swap/presets/scope-rangefinder.svg");
 
-const STYLES_CSS: &str = include_str!("../../src/renderer/styles.css");
-const MOD_UTILS: &str = include_str!("../../src/renderer/utils.js");
-const MOD_BOOT: &str = include_str!("../../src/renderer/bootAnalyzer.js");
-const MOD_TELEMETRY: &str = include_str!("../../src/renderer/telemetryHud.js");
-const MOD_NETGRAPH: &str = include_str!("../../src/renderer/netGraphHud.js");
-const MOD_KEYS: &str = include_str!("../../src/renderer/keysOverlay.js");
-const MOD_CROSSHAIR: &str = include_str!("../../src/renderer/crosshairEngine.js");
-const MOD_EXTRA: &str = include_str!("../../src/renderer/extraOverlays.js");
-const MOD_FILTER: &str = include_str!("../../src/renderer/filterEngine.js");
-const MOD_CORSAIR: &str = include_str!("../../src/renderer/corsairReactive.js");
-const MOD_LEADERBOARD: &str = include_str!("../../src/renderer/leaderboardModal.js");
-const MOD_CMD: &str = include_str!("../../src/renderer/commandCenter.js");
-const MOD_MAIN: &str = include_str!("../../src/renderer/overlayMain.js");
+pub const GZ_OVERLAY_BUNDLE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/overlay_bundle.js.gz"));
+pub const GZ_CATALOG_JS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_catalog.js.gz"));
+const GZ_STUDIO_HTML: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_html.gz"));
+const GZ_STUDIO_CSS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_css.gz"));
+const GZ_STUDIO_JS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_js.gz"));
+const GZ_STUDIO_AIM: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_aim.gz"));
+const GZ_STUDIO_BAKER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_baker.gz"));
+const GZ_THREE_CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_core.gz"));
+const GZ_THREE_MOD: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_mod.gz"));
+const GZ_THREE_ORBIT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_orbit.gz"));
+const GZ_THREE_GLTF: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_gltf.gz"));
+const GZ_THREE_UTILS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_utils.gz"));
+
+pub struct EmbeddedStudioAsset {
+    pub bytes: &'static [u8],
+    pub mime: &'static str,
+    pub gzipped: bool,
+}
+
+pub fn resolve_embedded_studio_asset(rel: &str) -> Option<EmbeddedStudioAsset> {
+    let clean = rel.trim_start_matches('/');
+    match clean {
+        "" | "studio.html" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_HTML, mime: "text/html; charset=utf-8", gzipped: true }),
+        "studio.css" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_CSS, mime: "text/css; charset=utf-8", gzipped: true }),
+        "catalog.js" => Some(EmbeddedStudioAsset { bytes: GZ_CATALOG_JS, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "studio.js" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_JS, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "aimTrainer.js" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_AIM, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "shaderBaker.js" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_BAKER, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "dih-icon.png" | "../assets/dih-icon.png" => Some(EmbeddedStudioAsset { bytes: DIH_LOGO_SVG, mime: "image/svg+xml", gzipped: false }),
+        "vendor/three/build/three.core.min.js" | "vendor/three/build/three.core.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_CORE, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "vendor/three/build/three.module.min.js" | "vendor/three/build/three.module.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_MOD, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "vendor/three/jsm/controls/OrbitControls.js" | "vendor/three/examples/jsm/controls/OrbitControls.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_ORBIT, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "vendor/three/jsm/loaders/GLTFLoader.js" | "vendor/three/examples/jsm/loaders/GLTFLoader.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_GLTF, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        "vendor/three/jsm/utils/BufferGeometryUtils.js" | "vendor/three/examples/jsm/utils/BufferGeometryUtils.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_UTILS, mime: "application/javascript; charset=utf-8", gzipped: true }),
+        _ => None,
+    }
+}
 
 pub fn parse_catalog() -> Value {
-    serde_json::from_str(CATALOG_JSON).expect("Valid embedded catalog.json")
+    serde_json::from_str(CATALOG_CORE_JSON).expect("Valid embedded catalog_core.json")
 }
 
 pub fn build_game_injection_script() -> String {
-    let css_literal = serde_json::to_string(STYLES_CSS).unwrap();
-    let combined_js = [
-        MOD_UTILS,
-        MOD_BOOT,
-        MOD_TELEMETRY,
-        MOD_NETGRAPH,
-        MOD_KEYS,
-        MOD_CROSSHAIR,
-        MOD_EXTRA,
-        MOD_FILTER,
-        MOD_CORSAIR,
-        MOD_LEADERBOARD,
-        MOD_CMD,
-        MOD_MAIN,
-    ]
-    .join("\n\n");
-
-    format!(
-        r#"(function() {{
-  try {{
+    r#"(function() {
+  try {
     var u = new URL(window.location.href);
     var host = u.hostname;
     var ok = host === "deadshot.io" || host === "www.deadshot.io" || host === "127.0.0.1" || host === "localhost";
     if (!ok) return;
-  }} catch (e) {{ return; }}
-  // Early WebGL & DPR optimization hook runs at document-start before Deadshot creates its WebGL2 context
-  if (!window.__DIH_EARLY_PERF__) {{
+  } catch (e) { return; }
+  // Do NOT monkeypatch HTMLCanvasElement.prototype.getContext; Deadshot's pkg-bootstrap integrity check
+  // blocks modified getContext.toString() ("Couldn't load the game").
+  if (!window.__DIH_EARLY_PERF__) {
     window.__DIH_EARLY_PERF__ = true;
-    var earlyCfg = {{}};
-    try {{ earlyCfg = JSON.parse(localStorage.getItem("__dih_early_perf") || "{{}}"); }} catch(_) {{}}
-    if (earlyCfg.webglLowLatency !== false && window.HTMLCanvasElement) {{
-      var origGetCtx = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function(type, attrs) {{
-        if (type === "webgl" || type === "webgl2" || type === "experimental-webgl") {{
-          var next = Object.assign({{ powerPreference: "high-performance", desynchronized: true }}, attrs || {{}});
-          try {{ return origGetCtx.call(this, type, next); }} catch(_) {{}}
-        }}
-        return origGetCtx.call(this, type, attrs);
-      }};
-    }}
+    var earlyCfg = {};
+    try { earlyCfg = JSON.parse(localStorage.getItem("__dih_early_perf") || "{}"); } catch(_) {}
     var dprScale = Number(earlyCfg.canvasDprScale);
-    if (dprScale >= 0.5 && dprScale <= 1.5 && Math.abs(dprScale - 1) > 0.02) {{
+    if (dprScale >= 0.5 && dprScale <= 1.5 && Math.abs(dprScale - 1) > 0.02) {
       var origDpr = Number(window.devicePixelRatio) || 1;
-      try {{
-        Object.defineProperty(window, "devicePixelRatio", {{
-          get: function() {{ return Math.max(0.5, Math.min(2.5, origDpr * dprScale)); }},
+      try {
+        Object.defineProperty(window, "devicePixelRatio", {
+          get: function() { return Math.max(0.5, Math.min(2.5, origDpr * dprScale)); },
           configurable: true
-        }});
-      }} catch(_) {{}}
-    }}
-  }}
-  function startDihOverlay() {{
+        });
+      } catch(_) {}
+    }
+  }
+  function loadDihBundle() {
     if (window.__DIH_INJECTED__) return;
-    if (!document.body && !document.documentElement) {{
-      document.addEventListener("DOMContentLoaded", startDihOverlay, {{ once: true }});
+    var target = document.head || document.documentElement || document.body;
+    if (!target) {
+      document.addEventListener("DOMContentLoaded", loadDihBundle, { once: true });
       return;
-    }}
+    }
     window.__DIH_INJECTED__ = true;
-    const DIH_SHADOW_CSS = {css_literal};
-    const DIH_NS = {{}};
-    {combined_js}
-    if (typeof DIH_NS.boot === "function") {{
-      DIH_NS.boot(DIH_SHADOW_CSS);
-    }}
-  }}
-  if (document.readyState === "loading") {{
-    document.addEventListener("DOMContentLoaded", startDihOverlay, {{ once: true }});
-  }} else {{
-    startDihOverlay();
-  }}
-}})();"#
-    )
-}
-
-pub fn resolve_studio_dir() -> PathBuf {
-    let mut candidates = Vec::new();
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            candidates.push(dir.join("studio"));
-            candidates.push(dir.join("..\\..\\src\\studio"));
-            candidates.push(dir.join("..\\..\\..\\src\\studio"));
-        }
-    }
-    if let Ok(cwd) = std::env::current_dir() {
-        candidates.push(cwd.join("studio"));
-        candidates.push(cwd.join("src").join("studio"));
-        candidates.push(cwd.join("..\\src\\studio"));
-    }
-    for c in candidates {
-        if c.join("studio.html").exists() {
-            return c;
-        }
-    }
-    PathBuf::from("src\\studio")
+    ["/__dih_catalog.js", "/__dih_bundle.js"].forEach(function(src) {
+      var s = document.createElement("script");
+      s.async = false;
+      s.src = src;
+      target.appendChild(s);
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadDihBundle, { once: true });
+  } else {
+    loadDihBundle();
+  }
+})();"#.to_string()
 }

@@ -7,16 +7,16 @@
 const THEME_PRESETS = {
   obsidianSlate: {
     name: "Obsidian Slate",
-    accent: "#d4d8df",
-    surface: "#121317",
-    elevated: "#1a1c22",
-    textPrimary: "#f2f4f7",
-    textSecondary: "#9097a3",
-    border: "rgba(255, 255, 255, 0.085)",
-    bgOpacity: 0.88,
-    blurPx: 14,
-    keyMove: "#d4d8df",
-    keyAction: "#9ba3b0",
+    accent: "#e5e8ef",
+    surface: "#111317",
+    elevated: "#1b1d24",
+    textPrimary: "#f8fafc",
+    textSecondary: "#9ca3af",
+    border: "rgba(255, 255, 255, 0.1)",
+    bgOpacity: 0.9,
+    blurPx: 20,
+    keyMove: "#e5e8ef",
+    keyAction: "#9ca3af",
   },
   titaniumMist: {
     name: "Titanium Mist",
@@ -106,7 +106,13 @@ const DEFAULT_SETTINGS = {
     toggleGui: "RightShift",
     toggleGuiAlt: "o",
     hideAllHud: "F9",
+    toggleTelemetry: "F4",
+    toggleTelemetryView: "F6",
+    toggleCrosshair: "F2",
+    toggleKeysOverlay: "F3",
+    toggleWatermark: "F1",
     openStudio: "F7",
+    openAimTrainer: "Insert",
     screenshot: "F10",
     muteMaster: "F8",
     stopwatchToggle: "b",
@@ -165,12 +171,13 @@ const DEFAULT_SETTINGS = {
     ...THEME_PRESETS.obsidianSlate,
     customCssEnabled: true,
     minimalistGameUi: true,
-    compactCornerRadius: 10,
+    compactCornerRadius: 12,
     density: "cozy", // cozy | compact
   },
   hud: {
     enabled: true,
     statsEnabled: true,
+    telemetryViewMode: "complete", // complete | minimal
     statsLayout: "compact_card", // compact_card | top_bar | minimal_pill
     showFps: true,
     fpsColorCoded: true,
@@ -244,6 +251,7 @@ const DEFAULT_SETTINGS = {
     swapperEnabled: true,
     syncSmallIcons: true,
     syncMobileVariants: true,
+    overrideEquippedGameSkin: true,
     activePresetName: "Custom Loadout",
     weapons: {
       ar: { mode: "default", officialId: "default", wear: 0, customFile: "" },
@@ -314,6 +322,22 @@ const DEFAULT_SETTINGS = {
     targetRenderScale: null,
     targetAntialias: null,
     hideNativeCrosshair: false,
+  },
+  autoChat: {
+    enabled: true,
+    message: "Dih User Joined",
+    delayMs: 1400,
+    cooldownMs: 15000,
+    onlyOnMatchJoin: true,
+  },
+  aimTrainer: {
+    selectedWeapon: "ar",
+    selectedDrill: "recommended",
+    difficulty: "ranked",
+    durationSec: 45,
+    showRecoilGuide: true,
+    useClientCrosshair: true,
+    bestScores: {},
   },
 };
 

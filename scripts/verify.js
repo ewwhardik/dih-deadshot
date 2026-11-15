@@ -21,6 +21,8 @@ const {
   WEAPONS,
   OFFICIAL_SKINS,
   SHADER_SKINS,
+  DIH_SKIN_PACKS,
+  WEAPON_BALLISTICS,
   MAPS,
   DSIO_SETTINGS_KEYS,
   buildOfficialSkinUrl,
@@ -53,9 +55,9 @@ async function testSyntax() {
   for (const file of jsFiles) {
     execFileSync(process.execPath, ["--check", file], { stdio: "pipe" });
   }
-  // Verify ESM studio.js parses as ES module cleanly in Chromium later and verify non-empty
+  // Verify ESM studio.js parses as ES module cleanly in Chromium later and imports GLTFLoader + AimTrainer without Draco bloat
   const studioJs = fs.readFileSync(path.join(ROOT, "src", "studio", "studio.js"), "utf8");
-  assert(studioJs.includes("DRACOLoader") && studioJs.includes("GLTFLoader"));
+  assert(studioJs.includes("GLTFLoader") && studioJs.includes("initAimTrainer") && !studioJs.includes("DRACOLoader"));
   console.log(`[PASS] Syntax check across ${jsFiles.length} CommonJS/renderer/docs JS files`);
 }
 
@@ -67,9 +69,13 @@ function testFeatureRegistryAndCatalog() {
   const docsMatch = docsDataSrc.match(/window\.DIH_DOCS_DATA\s*=\s*(\{[\s\S]*\});/);
   assert(docsMatch, "docs/features-data.js must define window.DIH_DOCS_DATA");
   const docsData = JSON.parse(docsMatch[1]);
-  assert.strictEqual(docsData.version, "0.3.0", `Expected docs version 0.3.0, got ${docsData.version}`);
+  assert.strictEqual(docsData.version, "0.4.0", `Expected docs version 0.4.0, got ${docsData.version}`);
   assert.strictEqual(docsData.featureCount, FEATURE_REGISTRY.length, "docs/features-data.js out of sync (run npm run sync-docs)");
   assert.strictEqual(docsData.features?.length, FEATURE_REGISTRY.length, "docs/features-data.js features array length mismatch");
+  const licenseSrc = fs.readFileSync(path.join(ROOT, "LICENSE"), "utf8");
+  assert(licenseSrc.includes("ewwhardik") && licenseSrc.includes("All Rights Reserved"), "Proprietary LICENSE missing ewwhardik All Rights Reserved notice");
+  assert(Array.isArray(DIH_SKIN_PACKS) && DIH_SKIN_PACKS.some((p) => p.id === "royalflush"), "Missing Royal Flush shader skin pack");
+  assert(Object.keys(WEAPON_BALLISTICS || {}).length === 7, "Expected 7 weapons in WEAPON_BALLISTICS");
 
   const seenIds = new Set();
   for (const feat of FEATURE_REGISTRY) {
@@ -445,18 +451,26 @@ function testNativeDistribution(tmpDir) {
   );
   const report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
   assert.strictEqual(report.ok, true);
-  assert.strictEqual(report.version, "0.3.0", `Native version mismatch: ${report.version}`);
+  assert.strictEqual(report.version, "0.4.0", `Native version mismatch: ${report.version}`);
   assert(report.featureCount >= 190, `Native catalog missing features: ${report.featureCount}`);
-  assert.strictEqual(report.studioExists, true, "Studio HTML missing from dist bundle");
-  assert.strictEqual(report.threeJsExists, true, "Bundled Three.js missing from dist bundle");
+  const exeBytes = fs.statSync(exePath).size;
+  assert(exeBytes < 1_000_000, `Expected native Dih.exe < 1 MB (1,000,000 bytes), got ${exeBytes}`);
+  const distEntries = fs.readdirSync(path.join(ROOT, "dist", "Dih"));
+  const looseFiles = distEntries.filter((f) => /\.(js|html|css|json)$/i.test(f) || f === "studio" || f === "assets");
+  assert.strictEqual(looseFiles.length, 0, `Expected zero loose source files in dist/Dih, found: ${looseFiles.join(", ")}`);
+  assert.strictEqual(report.studioExists, true, "Studio HTML missing from embedded binary");
+  assert.strictEqual(report.threeJsExists, true, "Bundled Three.js missing from embedded binary");
+  assert.strictEqual(report.aimTrainerExists, true, "7-gun Aim Trainer missing from embedded binary");
   assert.strictEqual(report.adblockBlockedTest, true, "Native adblocker failed test URL");
+  assert.strictEqual(report.adblockVenatusTest, true, "Native adblocker failed Venatus URL");
+  assert.strictEqual(report.adblockAtmtdTest, true, "Native adblocker failed Atmtd URL");
   assert.strictEqual(report.adblockAllowedGame, true, "Native adblocker blocked game asset");
   assert.strictEqual(report.logoSwapMime, "image/svg+xml", "Centered Dih logo swap failed");
   assert(report.staticHardware?.gpu?.primaryName, "DXGI GPU name missing");
   assert(report.staticHardware?.displays?.primary?.displayFrequency > 0, "Win32 monitor Hz missing");
   assert(typeof report.liveMetrics?.hostMemoryMb === "number", "Native hostMemoryMb missing");
   console.log(
-    `[PASS] Native Rust/C dist/Dih/Dih.exe smoke verified (${report.featureCount} features, HostRAM=${report.liveMetrics.hostMemoryMb}MB, GPU=${report.staticHardware.gpu.primaryName}, Hz=${report.staticHardware.displays.primary.displayFrequency}Hz)`
+    `[PASS] Native Rust/C dist/Dih/Dih.exe (${(exeBytes / 1024).toFixed(1)} KB < 1 MB) smoke verified (${report.featureCount} features, HostRAM=${report.liveMetrics.hostMemoryMb}MB, GPU=${report.staticHardware.gpu.primaryName}, Hz=${report.staticHardware.displays.primary.displayFrequency}Hz)`
   );
 }
 

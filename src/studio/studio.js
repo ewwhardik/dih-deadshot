@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { initAimTrainer } from "./aimTrainer.js";
 
 function createNativeStudioBridge() {
   if (!window.chrome?.webview) return null;
@@ -87,7 +87,7 @@ function showToast(msg) {
 // --- Init Bundle ---
 const bundle = await api.getInitBundle();
 let settings = bundle.settings;
-const catalog = bundle.catalog;
+const catalog = window.__DIH_CATALOG__ || bundle.catalog;
 let customSkins = bundle.customSkins || [];
 const hw = bundle.hardware;
 
@@ -100,17 +100,40 @@ const tabBtns = document.querySelectorAll(".tab-btn");
 const views = document.querySelectorAll(".studio-view");
 
 let rendererInitialized = false;
+let aimTrainerCtrl = null;
 
-function switchTab(tabId) {
+function switchTab(tabPayload) {
+  const isObj = tabPayload && typeof tabPayload === "object";
+  const tabId = isObj ? (tabPayload.tab || "painter") : String(tabPayload || "painter");
+  const targetWeapon = isObj ? tabPayload.weapon : null;
+
+  if (tabId !== "aimtrainer" && document.pointerLockElement) {
+    try { document.exitPointerLock?.(); } catch {}
+  }
+
   tabBtns.forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
   views.forEach((v) => v.classList.toggle("active", v.id === `view-${tabId}`));
   if (tabId === "painter" && rendererInitialized) resizeRenderer();
+  if (targetWeapon && catalog.WEAPONS?.[targetWeapon]) {
+    if (tabId === "aimtrainer") {
+      aimTrainerCtrl?.selectWeapon?.(targetWeapon);
+    } else if (tabId === "painter") {
+      weaponSelect.value = targetWeapon;
+      load3dModel(targetWeapon);
+      loadWeaponBaseTexture(targetWeapon, baseSkinSelect.value || "default");
+    }
+  }
 }
 
 tabBtns.forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
-const urlTab = new URLSearchParams(window.location.search).get("tab");
+const urlParams = new URLSearchParams(window.location.search);
+const urlTab = urlParams.get("tab");
+const urlWeapon = urlParams.get("weapon");
 api.onSwitchTab((t) => switchTab(t));
 
+document.getElementById("btnOfficialEditor")?.addEventListener("click", () => {
+  api?.openExternal?.("https://deadshot.io/skineditor/");
+});
 document.getElementById("btnOpenFolder").addEventListener("click", () => api.openFolders());
 document.getElementById("btnReloadGame").addEventListener("click", async () => {
   await api.reloadGameWindow();
@@ -130,6 +153,7 @@ const glCaption = document.getElementById("glCaption");
 
 const weaponSelect = document.getElementById("weaponSelect");
 const baseSkinSelect = document.getElementById("baseSkinSelect");
+const chkGameFlat = document.getElementById("chkGameFlat");
 const chkAutoSpin = document.getElementById("chkAutoSpin");
 const chkFlipY = document.getElementById("chkFlipY");
 
@@ -188,6 +212,7 @@ scene.add(rimLight);
 const canvasTexture = new THREE.CanvasTexture(uvCanvas);
 canvasTexture.flipY = false;
 canvasTexture.colorSpace = THREE.SRGBColorSpace;
+canvasTexture.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy?.() || 4);
 canvasTexture.needsUpdate = true;
 
 chkFlipY.addEventListener("change", () => {
@@ -195,23 +220,63 @@ chkFlipY.addEventListener("change", () => {
   canvasTexture.needsUpdate = true;
 });
 
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath("./vendor/three/jsm/libs/draco/gltf/");
+chkGameFlat?.addEventListener("change", () => {
+  if (activeModelRoot) applyTextureToModel(activeModelRoot);
+});
+
 const gltfLoader = new GLTFLoader();
-gltfLoader.setDRACOLoader(dracoLoader);
 
 let activeModelRoot = null;
+
+function disposeModelRoot(root) {
+  if (!root) return;
+  root.traverse((obj) => {
+    if (obj.isMesh) {
+      obj.geometry?.dispose?.();
+      if (Array.isArray(obj.material)) obj.material.forEach((m) => m?.dispose?.());
+      else obj.material?.dispose?.();
+    }
+  });
+}
 
 function applyTextureToModel(root) {
   if (!root) return;
   root.traverse((obj) => {
-    if (obj.isMesh) {
+    if (!obj.isMesh) return;
+    const matName = String(obj.material?.name || obj.name || "").toLowerCase();
+    if (/glass|lens|optic_lens|scope_glass|reticle/.test(matName)) {
       obj.material = new THREE.MeshStandardMaterial({
-        map: canvasTexture,
-        roughness: 0.42,
-        metalness: 0.28,
+        color: 0x0f1722,
+        roughness: 0.12,
+        metalness: 0.85,
+        transparent: true,
+        opacity: 0.44,
+        side: THREE.DoubleSide,
       });
+      return;
     }
+    if (!obj.geometry?.attributes?.uv && obj.geometry?.attributes?.position) {
+      const pos = obj.geometry.attributes.position;
+      const uvs = new Float32Array(pos.count * 2);
+      for (let i = 0; i < pos.count; i++) {
+        uvs[i * 2] = (pos.getX(i) + 1) * 0.5;
+        uvs[i * 2 + 1] = (pos.getY(i) + 1) * 0.5;
+      }
+      obj.geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+    }
+    // Deadshot renders opaque weapon skins with MeshBasicMaterial + FrontSide (unlit atlas shading)
+    obj.material = chkGameFlat?.checked !== false
+      ? new THREE.MeshBasicMaterial({
+          map: canvasTexture,
+          transparent: true,
+          side: THREE.FrontSide,
+        })
+      : new THREE.MeshStandardMaterial({
+          map: canvasTexture,
+          roughness: 0.42,
+          metalness: 0.28,
+          side: THREE.FrontSide,
+        });
   });
   canvasTexture.needsUpdate = true;
 }
@@ -233,6 +298,7 @@ async function load3dModel(weaponId) {
   const w = catalog.WEAPONS[weaponId];
   if (activeModelRoot) {
     scene.remove(activeModelRoot);
+    disposeModelRoot(activeModelRoot);
     activeModelRoot = null;
   }
 
@@ -352,7 +418,6 @@ function resizeRenderer() {
 rendererInitialized = true;
 window.addEventListener("resize", resizeRenderer);
 resizeRenderer();
-if (urlTab) switchTab(urlTab);
 
 function animate3d() {
   requestAnimationFrame(animate3d);
@@ -493,10 +558,97 @@ window.addEventListener("mouseup", () => {
 });
 
 // --- Procedural Generators ---
+function hexToRgbTuple(hex) {
+  const clean = String(hex || "#ffffff").replace("#", "");
+  const full = clean.length === 3 ? clean.replace(/(.)/g, "$1$1") : clean.padEnd(6, "0");
+  const n = parseInt(full, 16) || 0;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function applyFragShaderToCanvas(fragSource, label = "Shader") {
+  const baker = window.DihSkinPackBaker;
+  if (!baker) {
+    showToast("Shader baker module not loaded");
+    return false;
+  }
+  const baked = baker.bakeFragmentShaderToCanvas(fragSource, {
+    weaponId: currentWeaponId,
+    baseCanvas: baseSnapshotCanvas,
+    maskCanvas,
+    width: 1024,
+    height: 1024,
+  });
+  uvCtx.clearRect(0, 0, 1024, 1024);
+  uvCtx.drawImage(baked, 0, 0, 1024, 1024);
+  canvasTexture.needsUpdate = true;
+  uvStatus.textContent = `Baked ${label} -> ${currentWeaponId.toUpperCase()}`;
+  return true;
+}
+
 function runGenerator(kind) {
   pushUndo();
   const colA = paintColorA.value;
   const colB = paintColorB.value;
+
+  if (kind === "royalflush") {
+    if (applyFragShaderToCanvas(window.DihSkinPackBaker?.ROYAL_FLUSH_FRAG, "Royal Flush GLSL")) {
+      const nameEl = document.getElementById("skinNameInput");
+      if (nameEl && (!nameEl.value.trim() || nameEl.value === "Obsidian-Prototype")) {
+        nameEl.value = `RoyalFlush-${currentWeaponId.toUpperCase()}`;
+      }
+      showToast(`Baked Royal Flush shader on ${currentWeaponId.toUpperCase()}`);
+    }
+    return;
+  }
+
+  if (kind === "dualmask") {
+    const baseData = baseSnapshotCtx.getImageData(0, 0, 1024, 1024);
+    const maskData = maskCtx.getImageData(0, 0, 1024, 1024);
+    const out = uvCtx.createImageData(1024, 1024);
+    const b = baseData.data;
+    const m = maskData.data;
+    const o = out.data;
+    const [r1, g1, b1] = hexToRgbTuple(colA);
+    const [r2, g2, b2] = hexToRgbTuple(colB);
+    let hasMask = false;
+    for (let i = 3; i < m.length; i += 64) {
+      if (m[i] > 20) {
+        hasMask = true;
+        break;
+      }
+    }
+    for (let i = 0; i < b.length; i += 4) {
+      const lum = (b[i] * 0.299 + b[i + 1] * 0.587 + b[i + 2] * 0.114) / 255;
+      const shade = 0.28 + lum * 0.92;
+      if (!hasMask) {
+        const t = ((i / 4) % 1024) / 1024;
+        o[i] = Math.min(255, Math.round((r1 * (1 - t) + r2 * t) * shade));
+        o[i + 1] = Math.min(255, Math.round((g1 * (1 - t) + g2 * t) * shade));
+        o[i + 2] = Math.min(255, Math.round((b1 * (1 - t) + b2 * t) * shade));
+        o[i + 3] = b[i + 3] || 255;
+        continue;
+      }
+      const isPrimary = m[i] > 128;
+      const isMetal = m[i + 2] > 128;
+      if (isMetal && !isPrimary) {
+        o[i] = b[i];
+        o[i + 1] = b[i + 1];
+        o[i + 2] = b[i + 2];
+      } else {
+        const cr = isPrimary ? r1 : r2;
+        const cg = isPrimary ? g1 : g2;
+        const cb = isPrimary ? b1 : b2;
+        o[i] = Math.min(255, Math.round(cr * shade));
+        o[i + 1] = Math.min(255, Math.round(cg * shade));
+        o[i + 2] = Math.min(255, Math.round(cb * shade));
+      }
+      o[i + 3] = b[i + 3] || 255;
+    }
+    uvCtx.putImageData(out, 0, 0);
+    canvasTexture.needsUpdate = true;
+    uvStatus.textContent = `Applied Dual-Tone UV Mask -> ${currentWeaponId.toUpperCase()}`;
+    return;
+  }
 
   if (kind === "fade") {
     const grad = uvCtx.createLinearGradient(0, 0, 1024, 1024);
@@ -590,6 +742,27 @@ function runGenerator(kind) {
 
 document.querySelectorAll("[data-gen]").forEach((btn) => {
   btn.addEventListener("click", () => runGenerator(btn.dataset.gen));
+});
+
+const inpFragFile = document.getElementById("inpFragFile");
+document.getElementById("btnImportFrag")?.addEventListener("click", () => inpFragFile?.click());
+inpFragFile?.addEventListener("change", async () => {
+  const file = inpFragFile.files?.[0];
+  if (!file) return;
+  try {
+    const src = await file.text();
+    pushUndo();
+    const cleanName = file.name.replace(/\.(frag|glsl|fs|txt)$/i, "");
+    if (applyFragShaderToCanvas(src, file.name)) {
+      const nameEl = document.getElementById("skinNameInput");
+      if (nameEl) nameEl.value = cleanName.slice(0, 32) || "Custom-Shader";
+      showToast(`Baked shader ${file.name} onto ${currentWeaponId.toUpperCase()}`);
+    }
+  } catch (err) {
+    showToast(`Shader error: ${err?.message || err}`);
+  } finally {
+    inpFragFile.value = "";
+  }
 });
 
 // --- Color Grading ---
@@ -720,10 +893,32 @@ document.getElementById("btnImportFile").addEventListener("click", async () => {
   }
 });
 
-// Boot Tab 1
-load3dModel("ar");
-loadWeaponBaseTexture("ar", "default");
+// Boot Tab 1 & Mount 7-Gun Aim Trainer
+const initialWeapon = urlWeapon && catalog.WEAPONS?.[urlWeapon] ? urlWeapon : "ar";
+weaponSelect.value = initialWeapon;
+load3dModel(initialWeapon);
+loadWeaponBaseTexture(initialWeapon, "default");
 refreshVault();
+
+const aimTrainerRoot = document.getElementById("aimTrainerRoot");
+if (aimTrainerRoot) {
+  aimTrainerCtrl = initAimTrainer({
+    container: aimTrainerRoot,
+    catalog,
+    getSettings: () => settings,
+    api,
+    onToast: showToast,
+  });
+}
+
+api.onSettingsChanged?.((next) => {
+  settings = next;
+  aimTrainerCtrl?.syncSettings?.();
+});
+
+if (urlTab) {
+  switchTab({ tab: urlTab, weapon: urlWeapon });
+}
 
 // =========================================================================
 // TAB 2: CORSAIR RGB & VIRTUAL KEYBOARD LAB

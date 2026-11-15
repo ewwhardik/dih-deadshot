@@ -5,7 +5,8 @@
 
 const { contextBridge, ipcRenderer, webFrame } = require("electron");
 
-// Run early pre-WebGL performance & DPR optimization hook in main world before page scripts allocate WebGL2 context
+// High-performance GPU & desync/vsync hints are enforced natively via Chromium flags.
+// Never monkeypatch HTMLCanvasElement.prototype.getContext because Deadshot's pkg-bootstrap checks native toString().
 try {
   webFrame.executeJavaScript(
     `(function(){
@@ -13,16 +14,6 @@ try {
       window.__DIH_EARLY_PERF__ = true;
       var cfg = {};
       try { cfg = JSON.parse(localStorage.getItem("__dih_early_perf") || "{}"); } catch(_) {}
-      if (cfg.webglLowLatency !== false && window.HTMLCanvasElement) {
-        var origGetCtx = HTMLCanvasElement.prototype.getContext;
-        HTMLCanvasElement.prototype.getContext = function(type, attrs) {
-          if (type === "webgl" || type === "webgl2" || type === "experimental-webgl") {
-            var next = Object.assign({ powerPreference: "high-performance", desynchronized: true }, attrs || {});
-            try { return origGetCtx.call(this, type, next); } catch(_) {}
-          }
-          return origGetCtx.call(this, type, attrs);
-        };
-      }
       var scale = Number(cfg.canvasDprScale);
       if (scale >= 0.5 && scale <= 1.5 && Math.abs(scale - 1) > 0.02) {
         var origDpr = Number(window.devicePixelRatio) || 1;
@@ -80,11 +71,13 @@ const api = {
 
   // Skins & 3D Studio
   listCustomSkins: () => ipcRenderer.invoke("dih:list-custom-skins"),
+  saveCustomSkin: (payload) => ipcRenderer.invoke("dih:save-custom-skin", payload),
   listSwapFiles: () => ipcRenderer.invoke("dih:list-swap-files"),
+  rescanSwapFiles: () => ipcRenderer.invoke("dih:rescan-swap-files"),
   saveSkinPreset: (name) => ipcRenderer.invoke("dih:save-skin-preset", name),
   applySkinPreset: (name) => ipcRenderer.invoke("dih:apply-skin-preset", name),
   deleteSkinPreset: (name) => ipcRenderer.invoke("dih:delete-skin-preset", name),
-  openStudio: (tab = "painter") => ipcRenderer.invoke("dih:open-studio", tab),
+  openStudio: (tab = "painter", weapon = "") => ipcRenderer.invoke("dih:open-studio", { tab, weapon }),
 
   // Corsair & OpenRGB
   getCorsairStatus: () => ipcRenderer.invoke("dih:corsair-status"),

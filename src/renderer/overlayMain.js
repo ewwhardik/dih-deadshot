@@ -27,7 +27,7 @@ DIH_NS.boot = async function boot(shadowCss) {
 
   let settings = await api.getSettings();
   const [catalog, staticHw, savedPositions] = await Promise.all([
-    api.getCatalog(),
+    window.__DIH_CATALOG__ ? Promise.resolve(window.__DIH_CATALOG__) : api.getCatalog(),
     api.getStaticHardware(),
     api.getHudPositions(),
   ]);
@@ -49,6 +49,9 @@ DIH_NS.boot = async function boot(shadowCss) {
   const extraOverlays = DIH_NS.createExtraOverlays(shadowRoot, getSettings, savedPositions);
   const filterEngine = DIH_NS.createFilterEngine(shadowRoot, getSettings);
   const corsairReactive = DIH_NS.createCorsairReactive(getSettings, telemetryHud.getCurrentMetrics);
+  const autoChat = DIH_NS.createAutoChat
+    ? DIH_NS.createAutoChat(shadowRoot, getSettings, toast)
+    : null;
   const leaderboardModal = DIH_NS.createLeaderboardModal(shadowRoot);
 
   let commandCenter = null;
@@ -108,6 +111,7 @@ DIH_NS.boot = async function boot(shadowCss) {
     crosshairEngine.refresh();
     extraOverlays.refresh();
     filterEngine.refresh();
+    autoChat?.refresh?.();
     commandCenter?.refresh();
   }
 
@@ -131,6 +135,7 @@ DIH_NS.boot = async function boot(shadowCss) {
     telemetryHud,
     leaderboardModal,
     bootAnalyzer,
+    autoChat,
     toast,
     onRefreshAll: refreshAll,
   });
@@ -144,6 +149,24 @@ DIH_NS.boot = async function boot(shadowCss) {
     refreshAll();
   });
 
+  async function toggleSettingPath(path, onMsg, offMsg) {
+    const parts = path.split(".");
+    let cur = settings;
+    for (const p of parts) cur = cur?.[p];
+    const next = !(cur !== false && Boolean(cur));
+    settings = await api.setSetting(path, next);
+    refreshAll();
+    toast(next ? onMsg : offMsg);
+  }
+
+  async function toggleTelemetryViewMode() {
+    const cur = settings.hud?.telemetryViewMode === "minimal" ? "minimal" : "complete";
+    const next = cur === "minimal" ? "complete" : "minimal";
+    settings = await api.setSetting("hud.telemetryViewMode", next);
+    refreshAll();
+    toast(`Telemetry View: ${next === "minimal" ? "Minimal Pill" : "Complete Card"}`);
+  }
+
   api.onAction((action) => {
     if (action?.type === "screenshotResult") {
       toast(
@@ -153,22 +176,33 @@ DIH_NS.boot = async function boot(shadowCss) {
       );
     } else if (action?.type === "toggleCommandCenter") {
       commandCenter.toggle();
-    } else if (action?.type === "toggleAllHud") {
-      api.setSetting("hud.enabled", !(settings.hud?.enabled !== false)).then((next) => {
-        settings = next;
-        refreshAll();
-      });
+    } else if (action?.type === "toggleAllHud" || action === "toggleAllHud") {
+      toggleSettingPath("hud.enabled", "HUD Overlays Restored", "Clean Mode: All HUD Hidden");
+    } else if (action === "toggleTelemetry" || action?.type === "toggleTelemetry") {
+      toggleSettingPath("hud.statsEnabled", "Telemetry HUD Visible", "Telemetry HUD Hidden");
+    } else if (action === "toggleTelemetryView" || action?.type === "toggleTelemetryView") {
+      toggleTelemetryViewMode();
+    } else if (action === "toggleCrosshair" || action?.type === "toggleCrosshair") {
+      toggleSettingPath("crosshair.enabled", "Crosshair Enabled", "Crosshair Hidden");
+    } else if (action === "toggleKeysOverlay" || action?.type === "toggleKeysOverlay") {
+      toggleSettingPath("hud.keysOverlayEnabled", "Keystrokes HUD Visible", "Keystrokes HUD Hidden");
+    } else if (action === "toggleWatermark" || action?.type === "toggleWatermark") {
+      toggleSettingPath("hud.watermarkEnabled", "Watermark Visible", "Watermark Hidden");
+    } else if (action === "triggerAutoChat" || action?.type === "triggerAutoChat") {
+      autoChat?.triggerManualSend?.();
+    } else if (typeof action === "string" && action.startsWith("toast:")) {
+      toast(action.slice(6));
     }
   });
 
-  // Global Hotkeys inside Game window (native Win32 host handles F7/F8/F10 too, avoiding double triggers)
+  // Global Hotkeys inside Game window (native Win32 host consumes its keys cleanly with SetHandled(true))
   window.addEventListener("keydown", async (e) => {
     const tag = e.target?.tagName;
     const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target?.isContentEditable;
 
-    const guiKey = settings.hotkeys?.toggleGui || "RightShift";
-    const guiAlt = (settings.hotkeys?.toggleGuiAlt || "o").toLowerCase();
-    const hideKey = settings.hotkeys?.hideAllHud || "F9";
+    const hk = settings.hotkeys || {};
+    const guiKey = hk.toggleGui || "RightShift";
+    const guiAlt = (hk.toggleGuiAlt || "o").toLowerCase();
 
     const matchesKey = (binding) => {
       if (!binding) return false;
@@ -195,12 +229,27 @@ DIH_NS.boot = async function boot(shadowCss) {
     if (matchesKey(guiAlt)) {
       e.preventDefault();
       commandCenter.toggle();
-    } else if (matchesKey(hideKey)) {
+    } else if (matchesKey(hk.hideAllHud || "F9")) {
       e.preventDefault();
-      const next = !(settings.hud?.enabled !== false);
-      settings = await api.setSetting("hud.enabled", next);
-      refreshAll();
-      toast(next ? "HUD Overlays Restored" : `Clean Mode: HUD Hidden (${hideKey})`);
+      await toggleSettingPath("hud.enabled", "HUD Overlays Restored", `Clean Mode: HUD Hidden (${hk.hideAllHud || "F9"})`);
+    } else if (matchesKey(hk.toggleTelemetry || "F4")) {
+      e.preventDefault();
+      await toggleSettingPath("hud.statsEnabled", "Telemetry HUD Visible", "Telemetry HUD Hidden");
+    } else if (matchesKey(hk.toggleTelemetryView || "F6")) {
+      e.preventDefault();
+      await toggleTelemetryViewMode();
+    } else if (matchesKey(hk.toggleCrosshair || "F2")) {
+      e.preventDefault();
+      await toggleSettingPath("crosshair.enabled", "Crosshair Enabled", "Crosshair Hidden");
+    } else if (matchesKey(hk.toggleKeysOverlay || "F3")) {
+      e.preventDefault();
+      await toggleSettingPath("hud.keysOverlayEnabled", "Keystrokes HUD Visible", "Keystrokes HUD Hidden");
+    } else if (matchesKey(hk.toggleWatermark || "F1")) {
+      e.preventDefault();
+      await toggleSettingPath("hud.watermarkEnabled", "Watermark Visible", "Watermark Hidden");
+    } else if (matchesKey(hk.openAimTrainer || "Insert")) {
+      e.preventDefault();
+      api?.openStudio?.("aimtrainer");
     }
   });
 

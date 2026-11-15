@@ -5,6 +5,7 @@ mod bundle;
 mod corsair;
 mod ffi;
 mod hw_analyzer;
+mod inflate;
 mod settings;
 mod skins;
 
@@ -21,15 +22,11 @@ use std::sync::{Arc, Mutex, RwLock};
 
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     CreateCoreWebView2EnvironmentWithOptions, ICoreWebView2, ICoreWebView2Controller,
-    ICoreWebView2Controller2, ICoreWebView2Environment, ICoreWebView2Settings2,
-    ICoreWebView2_13, ICoreWebView2_19, ICoreWebView2_3, ICoreWebView2_8,
-    COREWEBVIEW2_BROWSING_DATA_KINDS_ALL_SITE,
-    COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
-    COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW,
-    COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN,
-    COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
-    COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
-    COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
+    ICoreWebView2Controller2, ICoreWebView2Environment, ICoreWebView2_13, ICoreWebView2_19,
+    ICoreWebView2_8,
+    COREWEBVIEW2_BROWSING_DATA_KINDS_DISK_CACHE, COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
+    COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
+    COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL, COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
 };
 use webview2_com::{
     wait_with_pump, AcceleratorKeyPressedEventHandler,
@@ -69,9 +66,6 @@ const WM_APP_CORSAIR_FRAME: u32 = WM_APP + 1;
 const WM_APP_RELOAD_GAME: u32 = WM_APP + 2;
 const WM_APP_OPEN_STUDIO: u32 = WM_APP + 3;
 
-const STEALTH_USER_AGENT: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
-
 struct AppState {
     user_data_dir: PathBuf,
     catalog: Value,
@@ -82,6 +76,8 @@ struct AppState {
     main_hwnd: HWND,
     studio_hwnd: Option<HWND>,
     pending_studio_tab: String,
+    pending_studio_weapon: String,
+    dirty_skin_cache: bool,
     is_fullscreen: bool,
     applied_borderless_max: bool,
     saved_placement: WINDOWPLACEMENT,
@@ -470,6 +466,10 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
                         g.corsair.set_config(c.clone());
                     }
                 }
+                if path.starts_with("skins") {
+                    g.skins.clear_mem_cache();
+                    g.dirty_skin_cache = true;
+                }
                 u
             };
             apply_window_settings(app);
@@ -483,6 +483,10 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
                 let u = g.settings.update_settings(&patch);
                 if let Some(c) = u.get("corsair") {
                     g.corsair.set_config(c.clone());
+                }
+                if patch.get("skins").is_some() {
+                    g.skins.clear_mem_cache();
+                    g.dirty_skin_cache = true;
                 }
                 u
             };
@@ -631,7 +635,7 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
                         if let Ok(prof2) = prof.cast::<webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Profile2>() {
                             let h = ClearBrowsingDataCompletedHandler::create(Box::new(|_| Ok(())));
                             unsafe {
-                                let _ = prof2.ClearBrowsingData(COREWEBVIEW2_BROWSING_DATA_KINDS_ALL_SITE, &h);
+                                let _ = prof2.ClearBrowsingData(COREWEBVIEW2_BROWSING_DATA_KINDS_DISK_CACHE, &h);
                             }
                         }
                     }
@@ -673,7 +677,7 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
             let g = app.lock().unwrap();
             let diag = json!({
                 "client": "Dih Native Client (Rust + Win32 + WebView2)",
-                "version": "0.3.0",
+                "version": "0.4.0",
                 "author": "ewwhardik (GitHub & Discord: ewwhardik)",
                 "hardware": ffi::get_static_hardware(),
                 "liveMetrics": ffi::get_live_metrics(),
@@ -685,7 +689,15 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
             Ok(json!({ "ok": true, "filePath": out_path.to_string_lossy() }))
         }
         "listCustomSkins" => Ok(app.lock().unwrap().skins.list_custom_skins("https://deadshot.io")),
+        "saveCustomSkin" => rpc_save_custom_skin(app, params),
         "listSwapFiles" => Ok(app.lock().unwrap().skins.list_swap_files()),
+        "rescanSwapFiles" => {
+            let mut g = app.lock().unwrap();
+            g.skins.rescan_swap_index();
+            g.skins.clear_mem_cache();
+            g.dirty_skin_cache = true;
+            Ok(g.skins.list_swap_files())
+        }
         "saveSkinPreset" => {
             let name = params.get("name").and_then(|v| v.as_str()).unwrap_or("Preset");
             let updated = app.lock().unwrap().settings.save_skin_preset(name);
@@ -706,9 +718,11 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
         }
         "openStudio" => {
             let tab = params.get("tab").and_then(|v| v.as_str()).unwrap_or("painter").to_string();
+            let weapon = params.get("weapon").and_then(|v| v.as_str()).unwrap_or("").to_string();
             let hwnd = {
                 let mut g = app.lock().unwrap();
                 g.pending_studio_tab = tab;
+                g.pending_studio_weapon = weapon;
                 g.main_hwnd
             };
             unsafe {
@@ -725,6 +739,27 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
         }
         _ => Err(format!("Unknown RPC method: {method}")),
     }
+}
+
+fn rpc_save_custom_skin(app: &SharedApp, params: &Value) -> Result<Value, String> {
+    let apply_now = params.get("applyImmediately").and_then(|v| v.as_bool()).unwrap_or(false);
+    let weapon_id = params.get("weaponId").and_then(|v| v.as_str()).unwrap_or("ar").to_string();
+    let saved = app.lock().unwrap().skins.save_custom_skin(params)?;
+    if apply_now {
+        let file_name = saved.get("fileName").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let updated = {
+            let mut g = app.lock().unwrap();
+            g.skins.clear_mem_cache();
+            g.dirty_skin_cache = true;
+            g.settings.set_setting("skins.swapperEnabled", Value::Bool(true));
+            g.settings.set_setting(
+                &format!("skins.weapons.{weapon_id}"),
+                json!({ "mode": "custom", "officialId": "default", "wear": 0, "customFile": file_name }),
+            )
+        };
+        broadcast_settings(app, &updated);
+    }
+    Ok(saved)
 }
 
 fn handle_studio_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Value, String> {
@@ -750,24 +785,7 @@ fn handle_studio_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Va
                 "customUrl": format!("https://studio.dih.local/__dih_cache/{clean}"),
             }))
         }
-        "saveCustomSkin" => {
-            let apply_now = params.get("applyImmediately").and_then(|v| v.as_bool()).unwrap_or(false);
-            let weapon_id = params.get("weaponId").and_then(|v| v.as_str()).unwrap_or("ar").to_string();
-            let saved = app.lock().unwrap().skins.save_custom_skin(params)?;
-            if apply_now {
-                let file_name = saved.get("fileName").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                let updated = {
-                    let mut g = app.lock().unwrap();
-                    g.settings.set_setting("skins.swapperEnabled", Value::Bool(true));
-                    g.settings.set_setting(
-                        &format!("skins.weapons.{weapon_id}"),
-                        json!({ "mode": "custom", "officialId": "default", "wear": 0, "customFile": file_name }),
-                    )
-                };
-                broadcast_settings(app, &updated);
-            }
-            Ok(saved)
-        }
+        "saveCustomSkin" => rpc_save_custom_skin(app, params),
         "deleteCustomSkin" => {
             let fname = params.get("fileName").and_then(|v| v.as_str()).unwrap_or("");
             Ok(json!(app.lock().unwrap().skins.delete_custom_skin(fname)))
@@ -793,6 +811,8 @@ fn handle_studio_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Va
             let cfile = params.get("customFile").and_then(|v| v.as_str()).unwrap_or("");
             let updated = {
                 let mut g = app.lock().unwrap();
+                g.skins.clear_mem_cache();
+                g.dirty_skin_cache = true;
                 g.settings.set_setting("skins.swapperEnabled", Value::Bool(true));
                 g.settings.set_setting(
                     &format!("skins.weapons.{wid}"),
@@ -882,18 +902,63 @@ fn attach_resource_interceptor(
                 let Some(env_ref) = env.as_ref() else { return Ok(()); };
                 let settings_guard = settings_snap.read().unwrap();
 
-                if !is_studio {
+                if is_studio {
+                    let clean_url = uri.split(['?', '#']).next().unwrap_or(&uri);
+                    if let Some(rel) = clean_url.strip_prefix("https://studio.dih.local/") {
+                        if let Some(emb) = bundle::resolve_embedded_studio_asset(rel) {
+                            let decoded;
+                            let bytes = if emb.gzipped {
+                                decoded = crate::inflate::gzip(emb.bytes).unwrap_or_default();
+                                decoded.as_slice()
+                            } else {
+                                emb.bytes
+                            };
+                            if let Some(stream) = make_mem_stream(bytes) {
+                                let hdr = format!(
+                                    "Content-Type: {}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store",
+                                    emb.mime
+                                );
+                                let headers = HSTRING::from(hdr);
+                                if let Ok(resp) = env_ref.CreateWebResourceResponse(Some(&stream), 200, w!("OK"), &headers) {
+                                    let _ = args.SetResponse(Some(&resp));
+                                }
+                            }
+                            return Ok(());
+                        }
+                    }
+                } else {
+                    let clean_url = uri.split(['?', '#']).next().unwrap_or(&uri);
+                    let emb_js_gz = if clean_url.ends_with("/__dih_bundle.js") {
+                        Some(bundle::GZ_OVERLAY_BUNDLE)
+                    } else if clean_url.ends_with("/__dih_catalog.js") {
+                        Some(bundle::GZ_CATALOG_JS)
+                    } else {
+                        None
+                    };
+                    if let Some(gz_bytes) = emb_js_gz {
+                        let plain = crate::inflate::gzip(gz_bytes).unwrap_or_default();
+                        if let Some(stream) = make_mem_stream(&plain) {
+                            let headers = HSTRING::from(
+                                "Content-Type: application/javascript; charset=utf-8\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store",
+                            );
+                            if let Ok(resp) = env_ref.CreateWebResourceResponse(Some(&stream), 200, w!("OK"), &headers) {
+                                let _ = args.SetResponse(Some(&resp));
+                            }
+                        }
+                        return Ok(());
+                    }
                     let adblock_on = settings_guard
                         .pointer("/window/adblockerEnabled")
                         .and_then(|v| v.as_bool())
                         .unwrap_or(true);
                     if adblock_on && adblock::is_ad_or_tracker_url(&uri) {
-                        if let Ok(resp) = env_ref.CreateWebResourceResponse(
-                            None,
-                            204,
-                            w!("No Content"),
-                            w!("Access-Control-Allow-Origin: *"),
-                        ) {
+                        let (status, reason, mime, body) = adblock::blocked_ad_response(&uri);
+                        let stream_opt = if body.is_empty() { None } else { make_mem_stream(body) };
+                        let headers = HSTRING::from(format!(
+                            "Content-Type: {mime}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store"
+                        ));
+                        let reason_h = HSTRING::from(reason);
+                        if let Ok(resp) = env_ref.CreateWebResourceResponse(stream_opt.as_ref(), status as i32, &reason_h, &headers) {
                             let _ = args.SetResponse(Some(&resp));
                         }
                         return Ok(());
@@ -950,20 +1015,8 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
         if let Ok(settings) = wv.Settings() {
             let _ = settings.SetAreDefaultContextMenusEnabled(false);
             let _ = settings.SetIsStatusBarEnabled(false);
-            if let Ok(s2) = settings.cast::<ICoreWebView2Settings2>() {
-                let stealth = app
-                    .lock()
-                    .unwrap()
-                    .settings
-                    .get_all()
-                    .pointer("/window/userAgentStealth")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(true);
-                if stealth {
-                    let ua = HSTRING::from(STEALTH_USER_AGENT);
-                    let _ = s2.SetUserAgent(&ua);
-                }
-            }
+            // Keep Chromium's native User-Agent matching Sec-CH-UA / userAgentData
+            // so Deadshot's pkg-bootstrap never reports ua-brand-mismatch.
         }
 
         // Inject shadow DOM overlay script cleanly before first navigation
@@ -1030,7 +1083,20 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
                 if kind == COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN {
                     let mut vkey = 0u32;
                     if args.VirtualKey(&mut vkey).is_ok() {
-                        let (hk_studio, hk_mute, hk_hud, hk_shot, hk_fs, hk_reload) = {
+                        let (
+                            hk_studio,
+                            hk_trainer,
+                            hk_mute,
+                            hk_hud,
+                            hk_telemetry,
+                            hk_tview,
+                            hk_xhair,
+                            hk_keys,
+                            hk_watermark,
+                            hk_shot,
+                            hk_fs,
+                            hk_reload,
+                        ) = {
                             let g = snap_acc.read().unwrap();
                             let hk = |k: &str, def: &str| -> String {
                                 g.pointer(&format!("/hotkeys/{k}"))
@@ -1040,8 +1106,14 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
                             };
                             (
                                 hk("openStudio", "F7"),
+                                hk("openAimTrainer", "Insert"),
                                 hk("muteMaster", "F8"),
                                 hk("hideAllHud", "F9"),
+                                hk("toggleTelemetry", "F4"),
+                                hk("toggleTelemetryView", "F6"),
+                                hk("toggleCrosshair", "F2"),
+                                hk("toggleKeysOverlay", "F3"),
+                                hk("toggleWatermark", "F1"),
                                 hk("screenshot", "F10"),
                                 hk("fullscreen", "F11"),
                                 hk("quickReload", "F5"),
@@ -1052,6 +1124,16 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
                             let h = {
                                 let mut g = app_acc.lock().unwrap();
                                 g.pending_studio_tab = "painter".into();
+                                g.pending_studio_weapon.clear();
+                                g.main_hwnd
+                            };
+                            let _ = PostMessageW(Some(h), WM_APP_OPEN_STUDIO, WPARAM(0), LPARAM(0));
+                        } else if vkey_matches_hotkey(vkey, &hk_trainer) {
+                            let _ = args.SetHandled(true);
+                            let h = {
+                                let mut g = app_acc.lock().unwrap();
+                                g.pending_studio_tab = "aimtrainer".into();
+                                g.pending_studio_weapon.clear();
                                 g.main_hwnd
                             };
                             let _ = PostMessageW(Some(h), WM_APP_OPEN_STUDIO, WPARAM(0), LPARAM(0));
@@ -1067,6 +1149,21 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
                         } else if vkey_matches_hotkey(vkey, &hk_hud) {
                             let _ = args.SetHandled(true);
                             post_json(&wv_acc, "action", &json!("toggleAllHud"));
+                        } else if vkey_matches_hotkey(vkey, &hk_telemetry) {
+                            let _ = args.SetHandled(true);
+                            post_json(&wv_acc, "action", &json!("toggleTelemetry"));
+                        } else if vkey_matches_hotkey(vkey, &hk_tview) {
+                            let _ = args.SetHandled(true);
+                            post_json(&wv_acc, "action", &json!("toggleTelemetryView"));
+                        } else if vkey_matches_hotkey(vkey, &hk_xhair) {
+                            let _ = args.SetHandled(true);
+                            post_json(&wv_acc, "action", &json!("toggleCrosshair"));
+                        } else if vkey_matches_hotkey(vkey, &hk_keys) {
+                            let _ = args.SetHandled(true);
+                            post_json(&wv_acc, "action", &json!("toggleKeysOverlay"));
+                        } else if vkey_matches_hotkey(vkey, &hk_watermark) {
+                            let _ = args.SetHandled(true);
+                            post_json(&wv_acc, "action", &json!("toggleWatermark"));
                         } else if vkey_matches_hotkey(vkey, &hk_shot) {
                             let _ = args.SetHandled(true);
                             if let Ok(r) = capture_screenshot_blocking(&app_acc) {
@@ -1104,15 +1201,17 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
 }
 
 fn open_or_focus_studio(app: &SharedApp) {
-    let existing = app.lock().unwrap().studio_hwnd;
-    let tab = app.lock().unwrap().pending_studio_tab.clone();
+    let (existing, tab, weapon) = {
+        let g = app.lock().unwrap();
+        (g.studio_hwnd, g.pending_studio_tab.clone(), g.pending_studio_weapon.clone())
+    };
     if let Some(shwnd) = existing {
         unsafe {
             let _ = ShowWindow(shwnd, SW_SHOW);
             let _ = windows::Win32::UI::Input::KeyboardAndMouse::SetFocus(Some(shwnd));
         }
         if let Some(swv) = app.lock().unwrap().studio_wv.clone() {
-            post_json(&swv, "studioTab", &Value::String(tab));
+            post_json(&swv, "studioTab", &json!({ "tab": tab, "weapon": weapon }));
         }
         return;
     }
@@ -1180,18 +1279,7 @@ fn open_or_focus_studio(app: &SharedApp) {
         let _ = ctrl.SetIsVisible(true);
         let Ok(wv) = ctrl.CoreWebView2() else { return; };
 
-        if let Ok(wv3) = wv.cast::<ICoreWebView2_3>() {
-            let studio_dir = bundle::resolve_studio_dir();
-            let dir_str = studio_dir.canonicalize().unwrap_or(studio_dir).to_string_lossy().replace("\\\\?\\", "");
-            let w_folder = HSTRING::from(dir_str);
-            let _ = wv3.SetVirtualHostNameToFolderMapping(
-                w!("studio.dih.local"),
-                &w_folder,
-                COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW,
-            );
-        }
-
-        attach_resource_interceptor(&wv, app, &["https://studio.dih.local/__dih_*"], true);
+        attach_resource_interceptor(&wv, app, &["https://studio.dih.local/*"], true);
 
         let app_msg = app.clone();
         let wv_msg = wv.clone();
@@ -1224,7 +1312,11 @@ fn open_or_focus_studio(app: &SharedApp) {
             g.studio_wv = Some(wv.clone());
         }
 
-        let nav = HSTRING::from(format!("https://studio.dih.local/studio.html?tab={tab}"));
+        let nav = if weapon.is_empty() {
+            HSTRING::from(format!("https://studio.dih.local/studio.html?tab={tab}"))
+        } else {
+            HSTRING::from(format!("https://studio.dih.local/studio.html?tab={tab}&weapon={weapon}"))
+        };
         let _ = wv.Navigate(&nav);
     }
 }
@@ -1263,8 +1355,36 @@ unsafe extern "system" fn main_wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
         }
         WM_APP_RELOAD_GAME => {
             if let Some(m) = app_opt {
-                if let Some(wv) = m.lock().unwrap().game_wv.clone() {
-                    let _ = wv.Reload();
+                let (wv_opt, needs_flush, skins_ref) = {
+                    let mut g = m.lock().unwrap();
+                    let flush = g.dirty_skin_cache;
+                    g.dirty_skin_cache = false;
+                    (g.game_wv.clone(), flush, Arc::clone(&g.skins))
+                };
+                if let Some(wv) = wv_opt {
+                    if needs_flush {
+                        skins_ref.clear_mem_cache();
+                        let mut cleared_async = false;
+                        if let Ok(wv13) = wv.cast::<ICoreWebView2_13>() {
+                            if let Ok(prof) = wv13.Profile() {
+                                if let Ok(prof2) = prof.cast::<webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Profile2>() {
+                                    let wv_reload = wv.clone();
+                                    let h = ClearBrowsingDataCompletedHandler::create(Box::new(move |_| {
+                                        let _ = wv_reload.Reload();
+                                        Ok(())
+                                    }));
+                                    if prof2.ClearBrowsingData(COREWEBVIEW2_BROWSING_DATA_KINDS_DISK_CACHE, &h).is_ok() {
+                                        cleared_async = true;
+                                    }
+                                }
+                            }
+                        }
+                        if !cleared_async {
+                            let _ = wv.Reload();
+                        }
+                    } else {
+                        let _ = wv.Reload();
+                    }
                 }
             }
             LRESULT(0)
@@ -1399,20 +1519,27 @@ fn run_smoke_test(app: &SharedApp, smoke_out: Option<String>, test_url: Option<S
     let g = app.lock().unwrap();
     let static_hw = ffi::get_static_hardware();
     let live = ffi::get_live_metrics();
-    let feat_count = g.catalog.pointer("/FEATURE_REGISTRY").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
+    let feat_count = g.catalog
+        .get("FEATURE_COUNT")
+        .and_then(|v| v.as_u64())
+        .or_else(|| g.catalog.pointer("/FEATURE_REGISTRY").and_then(|v| v.as_array()).map(|a| a.len() as u64))
+        .unwrap_or(0);
     let corsair_st = g.corsair.get_status();
-    let studio_dir = bundle::resolve_studio_dir();
     let inj_len = bundle::build_game_injection_script().len();
     let report = json!({
         "ok": true,
         "engine": "Dih Native Rust + C + Win32 + WebView2",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "author": "ewwhardik",
         "featureCount": feat_count,
         "injectionScriptBytes": inj_len,
-        "studioExists": studio_dir.join("studio.html").exists(),
-        "threeJsExists": studio_dir.join("vendor/three/build/three.module.js").exists(),
+        "overlayBundleGzipBytes": bundle::GZ_OVERLAY_BUNDLE.len(),
+        "studioExists": bundle::resolve_embedded_studio_asset("studio.html").is_some(),
+        "threeJsExists": bundle::resolve_embedded_studio_asset("vendor/three/build/three.module.min.js").is_some(),
+        "aimTrainerExists": bundle::resolve_embedded_studio_asset("aimTrainer.js").is_some(),
         "adblockBlockedTest": adblock::is_ad_or_tracker_url("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"),
+        "adblockVenatusTest": adblock::is_ad_or_tracker_url("https://hb.vntsm.com/v4/live/vms/sites/deadshot.io/index.js"),
+        "adblockAtmtdTest": adblock::is_ad_or_tracker_url("https://edge.atmtd.com/script.js"),
         "adblockAllowedGame": !adblock::is_ad_or_tracker_url("https://deadshot.io/promo/logo.webp"),
         "logoSwapMime": g.skins.resolve_web_request("https://deadshot.io/promo/logo.webp", &g.settings.get_all()).map(|r| r.mime),
         "staticHardware": static_hw,
@@ -1457,6 +1584,8 @@ fn main() {
         main_hwnd: HWND::default(),
         studio_hwnd: None,
         pending_studio_tab: "painter".to_string(),
+        pending_studio_weapon: String::new(),
+        dirty_skin_cache: false,
         is_fullscreen: false,
         applied_borderless_max: false,
         saved_placement: WINDOWPLACEMENT::default(),

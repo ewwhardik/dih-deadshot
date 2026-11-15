@@ -20,9 +20,19 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", "Segoe UI", -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.studio-view.active {
+  animation: studio-fade-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes studio-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .mono {
@@ -539,4 +549,157 @@ body {
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.14);
   border-radius: 99px;
+}
+
+/* --- Tab 4: 7-Gun Ballistic Aim Trainer --- */
+.trainer-shell {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trainer-side {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 4px;
+}
+
+.trainer-weapon-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.trainer-gun-btn {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 9px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.trainer-gun-btn:hover {
+  border-color: rgba(212, 216, 223, 0.35);
+}
+
+.trainer-gun-btn.active {
+  border-color: var(--accent);
+  background: rgba(212, 216, 223, 0.12);
+}
+
+.trainer-gun-btn small {
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.trainer-spec-box {
+  background: #0b0c10;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 10.5px;
+  line-height: 1.48;
+  color: var(--text);
+}
+
+.trainer-recoil-plot {
+  width: 100%;
+  height: 98px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #0b0c10;
+  display: block;
+}
+
+.check-inline {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.trainer-stage-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.trainer-hud-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.trainer-hud-bar b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.trainer-canvas-box {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #08090c;
+}
+
+#trArenaCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+.trainer-overlay-prompt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 9, 12, 0.72);
+  z-index: 4;
+}
+
+.trainer-prompt-card {
+  max-width: 460px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+.trainer-best-line {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--accent);
 }

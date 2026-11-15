@@ -211,7 +211,7 @@ DIH_NS.createExtraOverlays = function createExtraOverlays(shadowRoot, getSetting
   makeDraggable(gifRoot, "companionGif", getSettings, savedPositions);
 
   // 7. Compact Bottom Keybind Guide Hint
-  const keyHintBar = el("div", { className: "dih-card dih-keyhint-bar dih-mono" }, "RShift Menu • F7 Studio • F8 Mute • F9 Hide HUD • F10 Shot");
+  const keyHintBar = el("div", { className: "dih-card dih-keyhint-bar dih-mono" }, "RShift Menu • F1-F4 Toggle HUD • F6 Min/Full • F7 Studio • Ins Aim • F9 Hide All");
   shadowRoot.appendChild(keyHintBar);
 
   window.addEventListener(

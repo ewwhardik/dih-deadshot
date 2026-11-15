@@ -49,12 +49,4 @@ New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
 Copy-Item $ExeSrc (Join-Path $DistDir "Dih.exe") -Force
 Copy-Item $LoaderSrc (Join-Path $DistDir "WebView2Loader.dll") -Force
 
-$AssetsOut = Join-Path $DistDir "assets"
-New-Item -ItemType Directory -Path $AssetsOut -Force | Out-Null
-Copy-Item (Join-Path $Root "assets\dih-icon.ico") (Join-Path $AssetsOut "dih-icon.ico") -Force
-Copy-Item (Join-Path $Root "assets\dih-icon.png") (Join-Path $AssetsOut "dih-icon.png") -Force
-
-Copy-Item (Join-Path $Root "swap") (Join-Path $DistDir "swap") -Recurse -Force
-Copy-Item (Join-Path $Root "src\studio") (Join-Path $DistDir "studio") -Recurse -Force
-
-Write-Host "Packaged native Dih Client -> $DistDir"
+Write-Host "Packaged single-binary native Dih Client -> $DistDir"

@@ -81,6 +81,13 @@ impl SettingsStore {
             }
         }
 
+        // Normalize legacy low-opacity test override back to premium grey-white slate
+        if current.pointer("/theme/surface").and_then(|v| v.as_str()) == Some("#0033ff") {
+            if let Some(def_theme) = defaults.get("theme").cloned() {
+                set_by_dot_path(&mut current, "theme", def_theme);
+            }
+        }
+
         let hud_positions = fs::read_to_string(&hud_path)
             .ok()
             .and_then(|s| serde_json::from_str::<Value>(&s).ok())

@@ -1,24 +1,24 @@
 :root {
-  --bg: #0c0d11;
-  --surface: #13151b;
-  --elevated: #1b1e27;
-  --border: rgba(255, 255, 255, 0.085);
-  --text: #f3f5f8;
-  --muted: #939aa8;
-  --accent: #d4d8df;
+  --bg: #0a0b0e;
+  --surface: #12141a;
+  --elevated: #1a1d24;
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #f5f7fa;
+  --muted: #9ca3af;
+  --accent: #e5e8ef;
   --green: #58c98a;
   --amber: #e2b866;
   --red: #d96464;
-  --radius: 12px;
+  --radius: 16px;
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  background: radial-gradient(circle at 20% 0%, #191c24 0%, #0c0d11 45%, #090a0d 100%);
+  background: radial-gradient(circle at 20% 0%, #191d26 0%, #0b0c10 48%, #08090c 100%);
   color: var(--text);
-  font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -483,6 +483,32 @@ body {
 .feat-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.66rem; color: var(--muted); }
 
 /* Downloads & Footer */
+.bento-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.bento-shot {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bento-shot img {
+  width: 100%;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: block;
+}
+.bento-cap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .dl-card { display: flex; flex-direction: column; gap: 10px; justify-content: space-between; }
 .os-badge { font-size: 0.68rem; color: var(--accent); letter-spacing: 0.1em; }
 .dl-card h3 { margin: 0; font-size: 1.1rem; }
@@ -495,7 +521,7 @@ body {
 .footer-links a:hover { color: var(--text); }
 
 @media (max-width: 960px) {
-  .hero, .playground-grid, .grid-2, .grid-3, .grid-4, .features-grid, .hero-stats {
+  .hero, .playground-grid, .grid-2, .grid-3, .grid-4, .features-grid, .hero-stats, .bento-gallery {
     grid-template-columns: 1fr;
   }
 }
