@@ -246,8 +246,12 @@ DIH_NS.createExtraOverlays = function createExtraOverlays(shadowRoot, getSetting
     (e) => {
       if (e.button !== 0 || !document.pointerLockElement) return;
       const s = getSettings();
-      if (s.audio?.playClientHeadshotTone && !s.audio?.masterMuted) {
-        playTone("shot", s.audio.clientFeedbackVolume);
+      if (!s.audio?.masterMuted) {
+        if (s.audio?.hitmarkerSoundEnabled) {
+          playTone("hitmarker", s.audio.clientFeedbackVolume);
+        } else if (s.audio?.playClientHeadshotTone) {
+          playTone("shot", s.audio.clientFeedbackVolume);
+        }
       }
     },
     { passive: true }
@@ -277,7 +281,14 @@ DIH_NS.createExtraOverlays = function createExtraOverlays(shadowRoot, getSetting
   function refresh() {
     const s = getSettings();
     const hud = s.hud || {};
+    const ep = s.esportsHud || {};
     const master = hud.enabled !== false;
+    const hScale = Math.max(0.75, Math.min(1.35, Number(ep.hudScale) || 1));
+    const hOpac = Math.max(0.35, Math.min(1, Number(ep.hudOpacity) ?? 0.92));
+    for (const w of [kdRoot, swRoot, wuRoot, rxRoot, keyHintBar]) {
+      w.style.zoom = String(hScale);
+      w.style.opacity = String(hOpac);
+    }
 
     watermark.classList.toggle("dih-hidden", !(master && hud.watermarkEnabled));
     watermark.textContent = hud.watermarkText || "DIH CLIENT";

@@ -193,6 +193,11 @@ impl SettingsStore {
                     perf.insert("jsHeapLimitMb".into(), serde_json::json!(4096));
                     perf.insert("hostRamTargetMb".into(), serde_json::json!(12));
                     perf.insert("autoHostRamGuard".into(), Value::Bool(true));
+                    perf.insert("enablePriorityBoost".into(), Value::Bool(true));
+                    perf.insert("disableSmoothScrolling".into(), Value::Bool(true));
+                    perf.insert("webglLowLatency".into(), Value::Bool(true));
+                    perf.insert("canvasDprScale".into(), serde_json::json!(1.0));
+                    perf.insert("reduceMotionUi".into(), Value::Bool(false));
                 }
                 "balanced" => {
                     perf.insert("disableFrameRateLimit".into(), Value::Bool(true));
@@ -212,6 +217,11 @@ impl SettingsStore {
                     perf.insert("jsHeapLimitMb".into(), serde_json::json!(2048));
                     perf.insert("hostRamTargetMb".into(), serde_json::json!(12));
                     perf.insert("autoHostRamGuard".into(), Value::Bool(true));
+                    perf.insert("enablePriorityBoost".into(), Value::Bool(true));
+                    perf.insert("preferPerformanceCores".into(), Value::Bool(false));
+                    perf.insert("webglLowLatency".into(), Value::Bool(true));
+                    perf.insert("canvasDprScale".into(), serde_json::json!(0.95));
+                    perf.insert("reduceMotionUi".into(), Value::Bool(false));
                 }
                 "low_end" => {
                     perf.insert("disableFrameRateLimit".into(), Value::Bool(true));
@@ -231,6 +241,11 @@ impl SettingsStore {
                     perf.insert("jsHeapLimitMb".into(), serde_json::json!(1024));
                     perf.insert("hostRamTargetMb".into(), serde_json::json!(10));
                     perf.insert("autoHostRamGuard".into(), Value::Bool(true));
+                    perf.insert("enablePriorityBoost".into(), Value::Bool(false));
+                    perf.insert("preferPerformanceCores".into(), Value::Bool(false));
+                    perf.insert("webglLowLatency".into(), Value::Bool(true));
+                    perf.insert("canvasDprScale".into(), serde_json::json!(0.8));
+                    perf.insert("reduceMotionUi".into(), Value::Bool(true));
                 }
                 _ => {}
             }

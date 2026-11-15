@@ -81,6 +81,89 @@ class SystemMetricsService {
 
   _probeWmiHardware() {
     return new Promise((resolve) => {
+      if (process.platform === "darwin") {
+        execFile(
+          "system_profiler",
+          ["SPDisplaysDataType", "SPHardwareDataType", "-json"],
+          { timeout: 6000 },
+          (err, stdout) => {
+            if (!err && stdout) {
+              try {
+                const parsed = JSON.parse(stdout);
+                const dispData = parsed.SPDisplaysDataType || [];
+                const hwData = (parsed.SPHardwareDataType || [])[0] || {};
+                const gpus = [];
+                for (const d of dispData) {
+                  let hz = null;
+                  const ndrvs = d.spdisplays_ndrvs || [];
+                  for (const nd of ndrvs) {
+                    const m = /(\d+)\s*Hz/i.exec(String(nd._spdisplays_resolution || nd.spdisplays_resolution || ""));
+                    if (m) hz = Math.max(hz || 0, Number(m[1]));
+                  }
+                  const vramStr = String(d.spdisplays_vram || d._spdisplays_vram || "");
+                  const vramM = /(\d+)\s*(GB|MB)/i.exec(vramStr);
+                  const vramBytes = vramM
+                    ? Number(vramM[1]) * (vramM[2].toUpperCase() === "GB" ? 1024 ** 3 : 1024 ** 2)
+                    : null;
+                  gpus.push({
+                    Name: d.sppci_model || hwData.chip_type || "Apple Metal GPU",
+                    AdapterRAM: vramBytes,
+                    CurrentRefreshRate: hz || 60,
+                    MaxRefreshRate: hz || 60,
+                    DriverVersion: d.spdisplays_metal || "Metal",
+                  });
+                }
+                const cpuModel = hwData.chip_type || hwData.cpu_type || os.cpus()[0]?.model || "Apple CPU";
+                const coreCountMatch = /^(\d+)/.exec(String(hwData.number_processors || ""));
+                this.wmiInfo.gpus = gpus;
+                this.wmiInfo.cpus = [{
+                  Name: cpuModel,
+                  NumberOfCores: coreCountMatch ? Number(coreCountMatch[1]) : os.cpus().length,
+                  NumberOfLogicalProcessors: os.cpus().length,
+                  MaxClockSpeed: os.cpus()[0]?.speed || 3200,
+                }];
+                if (gpus[0]) {
+                  this.wmiInfo.monitorCurrentHz = gpus[0].CurrentRefreshRate;
+                  this.wmiInfo.monitorMaxHz = gpus[0].MaxRefreshRate;
+                }
+              } catch {}
+            }
+            this.wmiInfo.loaded = true;
+            resolve(this.wmiInfo);
+          }
+        );
+        return;
+      }
+
+      if (process.platform === "linux") {
+        execFile(
+          "sh",
+          ["-c", "lspci 2>/dev/null | grep -iE 'vga|3d|display' | head -n 3; echo '---'; xrandr --current 2>/dev/null | grep '\\*' | head -n 3"],
+          { timeout: 5000 },
+          (err, stdout) => {
+            if (!err && stdout) {
+              try {
+                const [gpuSec = "", hzSec = ""] = stdout.split("---");
+                const gpuLine = gpuSec.trim().split("\n").find(Boolean) || "";
+                const gpuName = gpuLine.replace(/^.*:\s*/, "").trim() || "Linux GPU";
+                const hzMatches = [...hzSec.matchAll(/(\d+(?:\.\d+)?)\s*\*/g)].map((m) => Math.round(Number(m[1])));
+                const maxHz = hzMatches.length ? Math.max(...hzMatches) : 60;
+                this.wmiInfo.gpus = [{
+                  Name: gpuName,
+                  CurrentRefreshRate: maxHz,
+                  MaxRefreshRate: maxHz,
+                }];
+                this.wmiInfo.monitorCurrentHz = maxHz;
+                this.wmiInfo.monitorMaxHz = maxHz;
+              } catch {}
+            }
+            this.wmiInfo.loaded = true;
+            resolve(this.wmiInfo);
+          }
+        );
+        return;
+      }
+
       if (process.platform !== "win32") {
         this.wmiInfo.loaded = true;
         return resolve(this.wmiInfo);
@@ -209,6 +292,102 @@ class SystemMetricsService {
       },
       gpu,
       displays,
+    };
+  }
+
+  /**
+   * Computes a deterministic PC Power Score (10-100) from real hardware telemetry
+   * and returns the optimal preset profile & rendering settings for the machine.
+   */
+  async analyzeHardwarePower() {
+    if (!this.wmiInfo.loaded) {
+      await this._probeWmiHardware();
+    }
+    const hw = await this.getStaticHardwareSummary();
+    const physCores = Number(hw.cpu?.physicalCores) || 2;
+    const threads = Number(hw.cpu?.logicalProcessors) || physCores;
+    const clockMhz = Number(hw.cpu?.baseClockMhz) || 2400;
+    const cpuModel = String(hw.cpu?.model || "");
+    const gpuName = String(hw.gpu?.primaryName || "");
+    const vramGb = Number(hw.gpu?.vramGb) || 0;
+    const ramGb = Number(hw.memory?.totalGb) || 4;
+    const hz = Number(hw.displays?.primary?.maxRefreshRate || hw.displays?.primary?.displayFrequency) || 60;
+
+    // 1. CPU score (0..35)
+    let cpuScore = physCores >= 8 || threads >= 16 ? 22 : physCores >= 6 || threads >= 12 ? 18 : physCores >= 4 || threads >= 8 ? 13 : 7;
+    cpuScore += clockMhz >= 3600 ? 6 : clockMhz >= 2600 ? 4 : 2;
+    if (/celeron|pentium|athlon|atom|n4\d{3}|n3\d{3}/i.test(cpuModel)) {
+      cpuScore = Math.max(5, cpuScore - 5);
+    } else if (/i[579]-1[234]\d|ultra|ryzen\s*[579]\s*[579]\d{2}|ryzen\s*[79]/i.test(cpuModel)) {
+      cpuScore += 7;
+    } else if (/ryzen|core\s*i[3579]/i.test(cpuModel)) {
+      cpuScore += 4;
+    }
+    cpuScore = Math.min(35, cpuScore);
+
+    // 2. GPU score (0..35)
+    let gpuTier = 8;
+    const isHighDiscrete = /rtx\s*(30[789]|40\d|50\d)|rx\s*(6[89]\d{2}|7[789]\d{2}|90\d{2})/i.test(gpuName);
+    const isMidDiscrete = /nvidia|geforce|rtx|gtx|radeon\s*rx|arc\s*[ab]\d/i.test(gpuName);
+    const isGoodApu = /iris\s*xe|radeon\s*(780m|680m|vega\s*[78])|mx\d{3}/i.test(gpuName);
+    if (isHighDiscrete) gpuTier = 30;
+    else if (isMidDiscrete) gpuTier = 24;
+    else if (isGoodApu) gpuTier = 15;
+    const vramBonus = vramGb >= 8 ? 5 : vramGb >= 4 ? 4 : vramGb >= 2 ? 2 : 1;
+    const gpuScore = Math.min(35, gpuTier + vramBonus);
+
+    // 3. RAM & Display scores (0..15 each)
+    const ramScore = ramGb >= 30 ? 15 : ramGb >= 15 ? 12 : ramGb >= 11 ? 9 : ramGb >= 7 ? 6 : 3;
+    const hzScore = hz >= 240 ? 15 : hz >= 144 ? 12 : hz >= 100 ? 9 : hz >= 70 ? 7 : 6;
+    const powerScore = Math.max(10, Math.min(100, cpuScore + gpuScore + ramScore + hzScore));
+
+    let tier = "balanced_laptop";
+    let tierLabel = "Balanced Competitive";
+    let recommendedPreset = "balanced";
+    let recommendedCanvasDprScale = 0.95;
+    let recommendedReduceMotion = false;
+    let recommendedHostRamTargetMb = 12;
+    let recommendedPreferPCores = false;
+
+    if (powerScore >= 76) {
+      tier = "extreme_workstation";
+      tierLabel = "Extreme Esports Workstation";
+      recommendedPreset = "max_compute";
+      recommendedCanvasDprScale = 1.0;
+      recommendedHostRamTargetMb = 14;
+      recommendedPreferPCores = threads >= 12;
+    } else if (powerScore >= 54) {
+      tier = "esports_desktop";
+      tierLabel = "High-FPS Esports Rig";
+      recommendedPreset = "max_compute";
+      recommendedCanvasDprScale = 1.0;
+      recommendedHostRamTargetMb = 12;
+    } else if (powerScore < 36) {
+      tier = "low_end_pc";
+      tierLabel = "Battery / Low-End Device";
+      recommendedPreset = "low_end";
+      recommendedCanvasDprScale = 0.8;
+      recommendedReduceMotion = true;
+      recommendedHostRamTargetMb = 10;
+    }
+
+    return {
+      powerScore,
+      tier,
+      tierLabel,
+      recommendedPreset,
+      breakdown: { cpuScore, gpuScore, ramScore, hzScore },
+      recommendations: {
+        presetMode: recommendedPreset,
+        canvasDprScale: recommendedCanvasDprScale,
+        reduceMotionUi: recommendedReduceMotion,
+        hostRamTargetMb: recommendedHostRamTargetMb,
+        preferPerformanceCores: recommendedPreferPCores,
+        disablePowerThrottling: powerScore >= 36,
+        webglLowLatency: true,
+      },
+      detectedSummary: `${cpuModel} (${physCores}C/${threads}T) • ${gpuName} • ${ramGb}GB RAM • ${hz}Hz`,
+      hardware: hw,
     };
   }
 

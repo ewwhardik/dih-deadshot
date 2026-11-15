@@ -166,8 +166,29 @@ class CorsairBridgeService {
   scanHardware() {
     return new Promise((resolve) => {
       if (process.platform !== "win32") {
-        this.hardware.scannedAt = Date.now();
-        return resolve(this.getStatus());
+        const cmd = process.platform === "darwin"
+          ? "pgrep -ix 'iCUE|OpenRGB' 2>/dev/null; echo '---'; system_profiler SPUSBDataType 2>/dev/null | grep -i 'corsair' -B 1 -A 2 | head -n 12"
+          : "pgrep -i 'openrgb|ckb-next' 2>/dev/null; echo '---'; lsusb -d 1b1c: 2>/dev/null | head -n 8";
+        execFile("sh", ["-c", cmd], { timeout: 4000 }, (err, stdout) => {
+          if (!err && stdout) {
+            const [procs = "", devs = ""] = stdout.split("---");
+            this.hardware.icueRunning = /icue/i.test(procs);
+            this.hardware.openRgbProcessRunning = /openrgb/i.test(procs);
+            this.hardware.corsairServiceRunning = /corsair|ckb-next/i.test(procs);
+            const lines = devs.split("\n").map((l) => l.trim()).filter((l) => /corsair|vid_1b1c|1b1c:/i.test(l));
+            if (lines.length) {
+              this.hardware.usbCorsairDevices = lines.map((l) => ({
+                name: l.replace(/^.*1b1c:[0-9a-f]+\s*/i, "").trim() || "Corsair HID Device",
+                status: "OK",
+                instanceId: "VID_1B1C",
+                deviceClass: "HIDClass",
+              }));
+            }
+          }
+          this.hardware.scannedAt = Date.now();
+          resolve(this.getStatus());
+        });
+        return;
       }
 
       const psScript = [

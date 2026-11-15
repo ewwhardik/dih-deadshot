@@ -4,7 +4,7 @@
  */
 
 DIH_NS.boot = async function boot(shadowCss) {
-  const { getHostApi, el, applyThemeVars, showToast, setAudioOptions, readDeadshotSettings, writeDeadshotSetting } = DIH_NS.utils;
+  const { getHostApi, el, applyThemeVars, syncEarlyPerfStorage, showToast, setAudioOptions, readDeadshotSettings, writeDeadshotSetting } = DIH_NS.utils;
   const api = getHostApi();
   if (!api) {
     console.warn("[Dih] Host IPC API unavailable");
@@ -38,8 +38,12 @@ DIH_NS.boot = async function boot(shadowCss) {
   };
 
   applyThemeVars(host, settings);
+  syncEarlyPerfStorage(settings);
 
   const telemetryHud = DIH_NS.createTelemetryHud(shadowRoot, getSettings, staticHw, savedPositions);
+  const netGraphHud = DIH_NS.createNetGraphHud
+    ? DIH_NS.createNetGraphHud(shadowRoot, getSettings, savedPositions)
+    : null;
   const keysOverlay = DIH_NS.createKeysOverlay(shadowRoot, getSettings, savedPositions);
   const crosshairEngine = DIH_NS.createCrosshairEngine(shadowRoot, getSettings);
   const extraOverlays = DIH_NS.createExtraOverlays(shadowRoot, getSettings, savedPositions);
@@ -48,6 +52,22 @@ DIH_NS.boot = async function boot(shadowCss) {
   const leaderboardModal = DIH_NS.createLeaderboardModal(shadowRoot);
 
   let commandCenter = null;
+  let bootAnalyzer = null;
+
+  const netGraphTimer = setInterval(() => {
+    const s = getSettings();
+    if (netGraphHud && s.hud?.enabled !== false && (s.esportsHud?.netGraphEnabled || s.esportsHud?.sessionStatsEnabled)) {
+      netGraphHud.update(telemetryHud.getCurrentMetrics?.());
+    }
+  }, 260);
+
+  window.addEventListener("contextmenu", (e) => {
+    if (getSettings()?.privacyPro?.blockContextMenu !== false) {
+      if (e.target?.tagName === "CANVAS" || document.pointerLockElement) {
+        e.preventDefault();
+      }
+    }
+  });
 
   function syncDeadshotConfigFromClient(force = false) {
     const cfg = settings.deadshotSync || {};
@@ -80,14 +100,26 @@ DIH_NS.boot = async function boot(shadowCss) {
 
   function refreshAll() {
     applyThemeVars(host, settings);
+    syncEarlyPerfStorage(settings);
     setAudioOptions({ limiterEnabled: settings.audio?.audioLimiterEnabled !== false });
     telemetryHud.refresh();
+    netGraphHud?.refresh?.();
     keysOverlay.refresh();
     crosshairEngine.refresh();
     extraOverlays.refresh();
     filterEngine.refresh();
     commandCenter?.refresh();
   }
+
+  bootAnalyzer = DIH_NS.createBootAnalyzer
+    ? DIH_NS.createBootAnalyzer({
+        shadowRoot,
+        getSettings,
+        setSettingsLocal,
+        onRefreshAll: refreshAll,
+        toast,
+      })
+    : null;
 
   commandCenter = DIH_NS.createCommandCenter({
     shadowRoot,
@@ -98,9 +130,14 @@ DIH_NS.boot = async function boot(shadowCss) {
     crosshairEngine,
     telemetryHud,
     leaderboardModal,
+    bootAnalyzer,
     toast,
     onRefreshAll: refreshAll,
   });
+
+  if (bootAnalyzer) {
+    bootAnalyzer.run({ forceShow: false, applyRecommended: false }).catch(() => {});
+  }
 
   api.onSettingsChanged((updated) => {
     settings = updated;

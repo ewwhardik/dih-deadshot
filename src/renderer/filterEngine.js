@@ -19,7 +19,23 @@ DIH_NS.createFilterEngine = function createFilterEngine(shadowRoot, getSettings)
   convolveNode.setAttribute("preserveAlpha", "true");
   convolveNode.setAttribute("kernelMatrix", "0 0 0 0 1 0 0 0 0");
   filterNode.appendChild(convolveNode);
-  defs.appendChild(filterNode);
+
+  const blackEqFilter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+  blackEqFilter.setAttribute("id", "dih-blackeq-filter");
+  const transferNode = document.createElementNS("http://www.w3.org/2000/svg", "feComponentTransfer");
+  const eqR = document.createElementNS("http://www.w3.org/2000/svg", "feFuncR");
+  const eqG = document.createElementNS("http://www.w3.org/2000/svg", "feFuncG");
+  const eqB = document.createElementNS("http://www.w3.org/2000/svg", "feFuncB");
+  for (const ch of [eqR, eqG, eqB]) {
+    ch.setAttribute("type", "gamma");
+    ch.setAttribute("amplitude", "1");
+    ch.setAttribute("exponent", "1");
+    ch.setAttribute("offset", "0");
+    transferNode.appendChild(ch);
+  }
+  blackEqFilter.appendChild(transferNode);
+
+  defs.append(filterNode, blackEqFilter);
   svgDefs.appendChild(defs);
   (document.body || document.documentElement).appendChild(svgDefs);
   shadowRoot.append(scopeOverlay, nightOverlay);
@@ -39,20 +55,36 @@ DIH_NS.createFilterEngine = function createFilterEngine(shadowRoot, getSettings)
     const hud = s.hud || {};
 
     scopeOverlay.classList.toggle("dih-hidden", !vis.scopeVignetteEnhancer);
+    if (vis.scopeVignetteEnhancer) {
+      const dark = Math.max(0.1, Math.min(0.92, (Number(vis.vignetteDarkness ?? 45) || 45) / 100));
+      scopeOverlay.style.background = `radial-gradient(circle at center, transparent 40%, rgba(4, 5, 8, ${dark.toFixed(2)}) 98%)`;
+    }
     nightOverlay.classList.toggle("dih-hidden", !vis.blueLightShield);
 
     let filterCss = "";
     const sharp = Math.max(0, Math.min(100, Number(vis.sharpnessBoost || 0)));
-    if (vis.filterEnabled || sharp > 0) {
-      const b = Number(vis.brightness ?? 100);
-      const c = Number(vis.contrast ?? 105);
-      const sat = Number(vis.saturation ?? 112);
-      const hue = Number(vis.hueRotate ?? 0);
-      const sep = Number(vis.sepia ?? 0);
-      const gray = Number(vis.grayscale ?? 0);
+    const blackEq = Math.max(0, Math.min(50, Number(vis.blackEqualizer || 0)));
+    const vibBoost = Math.max(0, Math.min(100, Number(vis.digitalVibranceBoost || 0)));
+    if (vis.filterEnabled || sharp > 0 || blackEq > 0 || vibBoost > 0) {
+      const b = vis.filterEnabled ? Number(vis.brightness ?? 100) : 100;
+      const c = vis.filterEnabled ? Number(vis.contrast ?? 105) : 100;
+      const baseSat = vis.filterEnabled ? Number(vis.saturation ?? 112) : 100;
+      const sat = Math.round(baseSat + vibBoost * 0.9);
+      const hue = vis.filterEnabled ? Number(vis.hueRotate ?? 0) : 0;
+      const sep = vis.filterEnabled ? Number(vis.sepia ?? 0) : 0;
+      const gray = vis.filterEnabled ? Number(vis.grayscale ?? 0) : 0;
       const parts = [];
-      if (vis.filterEnabled) {
+      if (vis.filterEnabled || vibBoost > 0) {
         parts.push(`brightness(${b}%) contrast(${c}%) saturate(${sat}%) hue-rotate(${hue}deg) sepia(${sep}%) grayscale(${gray}%)`);
+      }
+      if (blackEq > 0) {
+        const exp = Math.max(0.42, 1 - (blackEq / 50) * 0.52).toFixed(3);
+        const offset = ((blackEq / 50) * 0.045).toFixed(3);
+        for (const ch of [eqR, eqG, eqB]) {
+          ch.setAttribute("exponent", exp);
+          ch.setAttribute("offset", offset);
+        }
+        parts.push("url(#dih-blackeq-filter)");
       }
       if (sharp > 0) {
         const amt = (sharp / 100) * 1.15;
@@ -70,6 +102,12 @@ DIH_NS.createFilterEngine = function createFilterEngine(shadowRoot, getSettings)
     }
     if (hud.streamerPrivacyBlur) {
       cssRules.push(`#uname, .usernameInput, input[placeholder*="name" i] { filter: blur(6px) !important; transition: filter 120ms; }`);
+    }
+    if (vis.cleanHideGamePromo !== false) {
+      cssRules.push(`[id*="banner" i], [id*="promo" i], [class*="ad-container" i], [class*="adBanner" i] { display: none !important; opacity: 0 !important; pointer-events: none !important; }`);
+    }
+    if (vis.highContrastCursor) {
+      cssRules.push(`body, button, select { cursor: crosshair !important; }`);
     }
     if (theme.customCssEnabled !== false && theme.minimalistGameUi !== false) {
       cssRules.push(`

@@ -3,7 +3,40 @@
  * Keeps Node/Electron globals hidden while exposing typed Dih client APIs.
  */
 
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webFrame } = require("electron");
+
+// Run early pre-WebGL performance & DPR optimization hook in main world before page scripts allocate WebGL2 context
+try {
+  webFrame.executeJavaScript(
+    `(function(){
+      if(window.__DIH_EARLY_PERF__) return;
+      window.__DIH_EARLY_PERF__ = true;
+      var cfg = {};
+      try { cfg = JSON.parse(localStorage.getItem("__dih_early_perf") || "{}"); } catch(_) {}
+      if (cfg.webglLowLatency !== false && window.HTMLCanvasElement) {
+        var origGetCtx = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function(type, attrs) {
+          if (type === "webgl" || type === "webgl2" || type === "experimental-webgl") {
+            var next = Object.assign({ powerPreference: "high-performance", desynchronized: true }, attrs || {});
+            try { return origGetCtx.call(this, type, next); } catch(_) {}
+          }
+          return origGetCtx.call(this, type, attrs);
+        };
+      }
+      var scale = Number(cfg.canvasDprScale);
+      if (scale >= 0.5 && scale <= 1.5 && Math.abs(scale - 1) > 0.02) {
+        var origDpr = Number(window.devicePixelRatio) || 1;
+        try {
+          Object.defineProperty(window, "devicePixelRatio", {
+            get: function() { return Math.max(0.5, Math.min(2.5, origDpr * scale)); },
+            configurable: true
+          });
+        } catch(_) {}
+      }
+    })();`,
+    false
+  );
+} catch {}
 
 const api = {
   // Settings & profiles
@@ -28,6 +61,8 @@ const api = {
   getStaticHardware: () => ipcRenderer.invoke("dih:get-static-hardware"),
   getLiveMetrics: () => ipcRenderer.invoke("dih:get-live-metrics"),
   probePing: () => ipcRenderer.invoke("dih:probe-ping"),
+  runHardwareAnalysis: (applyRecommended = false) =>
+    ipcRenderer.invoke("dih:run-hardware-analysis", Boolean(applyRecommended)),
 
   // Window, audio & maintenance actions
   setMasterMute: (muted) => ipcRenderer.invoke("dih:set-master-mute", muted),

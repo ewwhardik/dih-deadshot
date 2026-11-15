@@ -154,6 +154,11 @@ class SettingsStore {
         webviewMemoryMode: "normal",
         jsHeapLimitMb: 4096,
         presetMode: "max_compute",
+        enablePriorityBoost: true,
+        disableSmoothScrolling: true,
+        webglLowLatency: true,
+        canvasDprScale: 1.0,
+        reduceMotionUi: false,
       };
       this.settings.network = {
         ...this.settings.network,
@@ -184,6 +189,11 @@ class SettingsStore {
         webviewMemoryMode: "normal",
         jsHeapLimitMb: 2048,
         presetMode: "balanced",
+        enablePriorityBoost: true,
+        preferPerformanceCores: false,
+        webglLowLatency: true,
+        canvasDprScale: 0.95,
+        reduceMotionUi: false,
       };
     } else if (normalized === "low_end") {
       this.settings.performance = {
@@ -207,6 +217,11 @@ class SettingsStore {
         webviewMemoryMode: "low",
         jsHeapLimitMb: 1024,
         presetMode: "low_end",
+        enablePriorityBoost: false,
+        preferPerformanceCores: false,
+        webglLowLatency: true,
+        canvasDprScale: 0.8,
+        reduceMotionUi: true,
       };
       if (this.settings.hud) {
         this.settings.hud.showFrametimeGraph = false;

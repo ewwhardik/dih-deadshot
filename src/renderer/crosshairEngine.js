@@ -100,6 +100,7 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
         bg.setAttribute("stroke", outCol);
         bg.setAttribute("stroke-width", String(thick + outlineW * 2));
         bg.setAttribute("stroke-linecap", "round");
+        bg.setAttribute("stroke-opacity", String(cfg._outlineOpacity ?? 0.85));
         svg.appendChild(bg);
       }
       const fg = document.createElementNS(ns, "line");
@@ -120,13 +121,14 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
         bg.setAttribute("cy", String(cy));
         bg.setAttribute("r", String(dotSize + outlineW));
         bg.setAttribute("fill", outCol);
+        bg.setAttribute("fill-opacity", String(cfg._outlineOpacity ?? 0.85));
         svg.appendChild(bg);
       }
       const fg = document.createElementNS(ns, "circle");
       fg.setAttribute("cx", String(cx));
       fg.setAttribute("cy", String(cy));
       fg.setAttribute("r", String(dotSize));
-      fg.setAttribute("fill", fillCol);
+      fg.setAttribute("fill", cfg._centerDotColor || fillCol);
       svg.appendChild(fg);
     };
 
@@ -138,6 +140,7 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
         bg.setAttribute("r", String(radius));
         bg.setAttribute("fill", "none");
         bg.setAttribute("stroke", outCol);
+        bg.setAttribute("stroke-opacity", String(cfg._outlineOpacity ?? 0.85));
         bg.setAttribute("stroke-width", String(thick + outlineW * 2));
         svg.appendChild(bg);
       }
@@ -250,25 +253,59 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
     }
   }
 
+  const hitmarkerEl = document.createElement("div");
+  hitmarkerEl.style.cssText =
+    "position:fixed;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%) scale(0.95);pointer-events:none;z-index:88;opacity:0;transition:opacity 75ms ease;";
+  hitmarkerEl.innerHTML =
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">' +
+    '<line x1="4" y1="4" x2="9" y2="9" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>' +
+    '<line x1="20" y1="4" x2="15" y2="9" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>' +
+    '<line x1="4" y1="20" x2="9" y2="15" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>' +
+    '<line x1="20" y1="20" x2="15" y2="15" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>' +
+    "</svg>";
+  shadowRoot.appendChild(hitmarkerEl);
+
+  const movingKeys = new Set();
+  let hitmarkerTimer = 0;
+
   function render() {
     const s = getSettings();
     const hudEnabled = s.hud?.enabled !== false;
-    const cfg = s.crosshair || {};
-    const visible = Boolean(hudEnabled && cfg.enabled);
+    const baseCfg = s.crosshair || {};
+    const pro = s.crosshairPro || {};
+    const visible = Boolean(hudEnabled && baseCfg.enabled);
 
-    if (!visible || (isAds && cfg.hideOnAds)) {
+    if (!visible || (isAds && baseCfg.hideOnAds)) {
       wrap.classList.add("dih-hidden");
       return;
     }
+
+    const movingExtra = pro.velocitySpread && movingKeys.size > 0 ? 4 : 0;
+    const effectiveType =
+      pro.sniperDotOnlyMode && isAds
+        ? "Dot"
+        : baseCfg.perWeaponProfiles && activeSlot
+        ? baseCfg.weaponProfiles?.[activeSlot] || baseCfg.type
+        : baseCfg.type;
+
+    const cfg = {
+      ...baseCfg,
+      type: effectiveType,
+      gap: (Number(baseCfg.gap) || 0) + movingExtra,
+      _centerDotColor: pro.centerDotColor || baseCfg.color,
+      _outlineOpacity: pro.outlineOpacity ?? 0.85,
+    };
 
     wrap.classList.remove("dih-hidden");
     wrap.classList.toggle("invert", Boolean(cfg.mixBlendInvert));
     wrap.style.opacity = String(cfg.opacity ?? 0.95);
 
     const sig = JSON.stringify({
-      t: cfg.perWeaponProfiles && activeSlot ? cfg.weaponProfiles?.[activeSlot] : cfg.type,
+      t: cfg.type,
       c: cfg.color,
+      cdc: cfg._centerDotColor,
       oc: cfg.outlineColor,
+      oo: cfg._outlineOpacity,
       oe: cfg.outlineEnabled,
       ow: cfg.outlineWidth,
       s: cfg.size,
@@ -292,6 +329,7 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
     (e) => {
       const s = getSettings();
       const cfg = s.crosshair || {};
+      const pro = s.crosshairPro || {};
       if (!cfg.enabled) return;
       if (e.button === 2) {
         isAds = true;
@@ -302,6 +340,13 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
         }
         if (cfg.hitFlashOnShot) {
           hitFlashUntil = performance.now() + 85;
+        }
+        if (pro.hitmarkerFlash && s.hud?.enabled !== false) {
+          clearTimeout(hitmarkerTimer);
+          hitmarkerEl.style.opacity = "0.92";
+          hitmarkerTimer = setTimeout(() => {
+            hitmarkerEl.style.opacity = "0";
+          }, 95);
         }
         if (!bloomAnimActive && (bloomScale > 1 || hitFlashUntil > 0)) {
           bloomAnimActive = true;
@@ -329,6 +374,21 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
       if (e.key === "1") { activeSlot = "slot1"; render(); }
       else if (e.key === "2") { activeSlot = "slot2"; render(); }
       else if (e.key === "3") { activeSlot = "slot3"; render(); }
+      else if (e.code === "KeyW" || e.code === "KeyA" || e.code === "KeyS" || e.code === "KeyD") {
+        const had = movingKeys.size > 0;
+        movingKeys.add(e.code);
+        if (!had && getSettings()?.crosshairPro?.velocitySpread) render();
+      }
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "keyup",
+    (e) => {
+      if (movingKeys.delete(e.code) && movingKeys.size === 0 && getSettings()?.crosshairPro?.velocitySpread) {
+        render();
+      }
     },
     { passive: true }
   );
@@ -338,6 +398,8 @@ DIH_NS.createCrosshairEngine = function createCrosshairEngine(shadowRoot, getSet
   return {
     renderSvgToContainer,
     refresh: render,
-    destroy: () => {},
+    destroy: () => {
+      clearTimeout(hitmarkerTimer);
+    },
   };
 };

@@ -4,6 +4,7 @@ mod adblock;
 mod bundle;
 mod corsair;
 mod ffi;
+mod hw_analyzer;
 mod settings;
 mod skins;
 
@@ -172,6 +173,9 @@ fn build_browser_args(perf: &Value, net: &Value) -> String {
         args.push("--disable-background-timer-throttling".into());
         args.push("--disable-backgrounding-occluded-windows".into());
     }
+    if perf.get("disableSmoothScrolling").and_then(|v| v.as_bool()).unwrap_or(true) {
+        args.push("--disable-smooth-scrolling".into());
+    }
     if let Some(angle) = perf.get("angleBackend").and_then(|v| v.as_str()) {
         if angle != "default" && !angle.is_empty() {
             args.push(format!("--use-angle={angle}"));
@@ -241,6 +245,9 @@ fn apply_window_settings(app: &SharedApp) {
     let no_sleep = perf.get("preventSleep").and_then(|v| v.as_bool()).unwrap_or(true);
     let disable_throttling = perf.get("disablePowerThrottling").and_then(|v| v.as_bool()).unwrap_or(true);
     let prio = perf.get("processPriority").and_then(|v| v.as_str()).unwrap_or("high");
+    let prio_boost = perf.get("enablePriorityBoost").and_then(|v| v.as_bool()).unwrap_or(true);
+    let prefer_p_cores = perf.get("preferPerformanceCores").and_then(|v| v.as_bool()).unwrap_or(false);
+    let ping_interval_ms = perf.get("pingIntervalMs").and_then(|v| v.as_u64()).unwrap_or(3500);
     let mem_mode = perf.get("webviewMemoryMode").and_then(|v| v.as_str()).unwrap_or("normal");
     let host_ram_target = perf.get("hostRamTargetMb").and_then(|v| v.as_f64()).unwrap_or(12.0);
     let auto_ram_guard = perf.get("autoHostRamGuard").and_then(|v| v.as_bool()).unwrap_or(true);
@@ -255,8 +262,10 @@ fn apply_window_settings(app: &SharedApp) {
         }
     }
 
+    ffi::set_ping_interval_ms(ping_interval_ms);
     ffi::configure_telemetry(ping_host, live_ping_probe, host_ram_target, auto_ram_guard, wv_pid);
     ffi::apply_runtime_perf(low_lat, no_sleep, prio, disable_throttling, wv_pid);
+    hw_analyzer::apply_advanced_win32_perf(prio_boost, prefer_p_cores);
 
     unsafe {
         if !hwnd.0.is_null() {
@@ -546,6 +555,45 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
         "getStaticHardware" => Ok(ffi::get_static_hardware()),
         "getLiveMetrics" => Ok(ffi::get_live_metrics()),
         "probePing" => Ok(ffi::probe_deadshot_latency()),
+        "runHardwareAnalysis" => {
+            let apply = params.get("applyRecommended").and_then(|v| v.as_bool()).unwrap_or(false);
+            let hw = ffi::get_static_hardware();
+            let analysis = hw_analyzer::analyze_hardware_power(&hw);
+            let updated = if apply {
+                let tier_preset = analysis["recommendedPreset"].as_str().unwrap_or("max_compute");
+                let rec = analysis.get("recommendations").cloned().unwrap_or(Value::Null);
+                let mut g = app.lock().unwrap();
+                let _ = g.settings.apply_perf_preset(tier_preset);
+                g.settings.update_settings(&json!({
+                    "performance": {
+                        "canvasDprScale": rec["canvasDprScale"].as_f64().unwrap_or(1.0),
+                        "reduceMotionUi": rec["reduceMotionUi"].as_bool().unwrap_or(false),
+                        "hostRamTargetMb": rec["hostRamTargetMb"].as_u64().unwrap_or(12),
+                        "preferPerformanceCores": rec["preferPerformanceCores"].as_bool().unwrap_or(false),
+                        "disablePowerThrottling": rec["disablePowerThrottling"].as_bool().unwrap_or(true),
+                    },
+                    "autoTune": {
+                        "completed": true,
+                        "lastScore": analysis["powerScore"].as_i64().unwrap_or(75),
+                        "recommendedTier": analysis["tier"].as_str().unwrap_or("esports_desktop"),
+                        "detectedSummary": analysis["detectedSummary"].as_str().unwrap_or(""),
+                    }
+                }))
+            } else {
+                app.lock().unwrap().settings.update_settings(&json!({
+                    "autoTune": {
+                        "lastScore": analysis["powerScore"].as_i64().unwrap_or(75),
+                        "recommendedTier": analysis["tier"].as_str().unwrap_or("esports_desktop"),
+                        "detectedSummary": analysis["detectedSummary"].as_str().unwrap_or(""),
+                    }
+                }))
+            };
+            if apply {
+                apply_window_settings(app);
+            }
+            broadcast_settings(app, &updated);
+            Ok(json!({ "analysis": analysis, "settings": updated }))
+        }
         "setMasterMute" => {
             let muted = params.get("muted").and_then(|v| v.as_bool()).unwrap_or(false);
             let updated = app.lock().unwrap().settings.set_setting("audio.masterMuted", Value::Bool(muted));
@@ -625,7 +673,7 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
             let g = app.lock().unwrap();
             let diag = json!({
                 "client": "Dih Native Client (Rust + Win32 + WebView2)",
-                "version": "0.2.0",
+                "version": "0.3.0",
                 "author": "ewwhardik (GitHub & Discord: ewwhardik)",
                 "hardware": ffi::get_static_hardware(),
                 "liveMetrics": ffi::get_live_metrics(),
@@ -1246,6 +1294,36 @@ unsafe extern "system" fn main_wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lp
             PostQuitMessage(0);
             LRESULT(0)
         }
+        WM_CLOSE => {
+            if let Some(m) = app_opt {
+                let confirm = m.lock().unwrap().settings.get_all()["privacyPro"]["confirmOnClose"]
+                    .as_bool()
+                    .unwrap_or(false);
+                if confirm && !hw_analyzer::confirm_close_dialog(hwnd) {
+                    return LRESULT(0);
+                }
+            }
+            let _ = DestroyWindow(hwnd);
+            LRESULT(0)
+        }
+        windows::Win32::UI::WindowsAndMessaging::WM_ACTIVATE => {
+            if let Some(m) = app_opt {
+                let perf = m.lock().unwrap().settings.get_all().get("performance").cloned().unwrap_or(Value::Null);
+                if perf.get("focusPriorityScaling").and_then(|v| v.as_bool()).unwrap_or(false) {
+                    let inactive = (wparam.0 & 0xFFFF) == 0;
+                    let low_lat = perf.get("lowLatencyTimer").and_then(|v| v.as_bool()).unwrap_or(true);
+                    let no_sleep = perf.get("preventSleep").and_then(|v| v.as_bool()).unwrap_or(true);
+                    let disable_throt = perf.get("disablePowerThrottling").and_then(|v| v.as_bool()).unwrap_or(true);
+                    let prio = if inactive { "normal" } else { perf.get("processPriority").and_then(|v| v.as_str()).unwrap_or("high") };
+                    let mut wv_pid = 0u32;
+                    if let Some(ref wv) = m.lock().unwrap().game_wv {
+                        let _ = wv.BrowserProcessId(&mut wv_pid);
+                    }
+                    ffi::apply_runtime_perf(low_lat, no_sleep, prio, disable_throt, wv_pid);
+                }
+            }
+            DefWindowProcW(hwnd, msg, wparam, lparam)
+        }
         _ => DefWindowProcW(hwnd, msg, wparam, lparam),
     }
 }
@@ -1328,7 +1406,7 @@ fn run_smoke_test(app: &SharedApp, smoke_out: Option<String>, test_url: Option<S
     let report = json!({
         "ok": true,
         "engine": "Dih Native Rust + C + Win32 + WebView2",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "author": "ewwhardik",
         "featureCount": feat_count,
         "injectionScriptBytes": inj_len,

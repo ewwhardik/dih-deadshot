@@ -1,6 +1,6 @@
 /**
- * Master Feature Registry for Dih Client (146 real, working features).
- * Used by Command Center search, quick-toggle cards, and automated feature coverage tests.
+ * Master Feature Registry for Dih Client (196 real, working features).
+ * Used by Command Center search, quick-toggle cards, Favorites, and automated feature coverage tests.
  */
 
 const FEATURE_CATEGORIES = [
@@ -48,6 +48,17 @@ const FEATURE_REGISTRY = [
   { id: "perf.presetBalanced", category: "performance", title: "Balanced Competitive Profile", description: "Balanced latency & thermals with 2GB V8 heap and Above Normal priority.", actionId: "applyPerfPreset:balanced", controlType: "action" },
   { id: "perf.presetLowEnd", category: "performance", title: "Low-End Device / Potato PC Profile", description: "WebView2 Low-Memory mode, 512MB V8 heap, 10MB host cap & lightweight HUD for older PCs.", actionId: "applyPerfPreset:low_end", controlType: "action" },
   { id: "perf.relaunchApply", category: "performance", title: "Apply CLI Flags & Relaunch Cleanly", description: "Restarts Dih cleanly so updated Chromium/ANGLE GPU & Network flags take immediate effect.", actionId: "relaunchApp", controlType: "action" },
+  { id: "perf.bootSplashEnabled", category: "performance", title: "Animated PC Power Boot Analyzer Splash", description: "Displays a sleek obsidian startup sequence that probes CPU/GPU/RAM/Hz before entering game.", settingPath: "autoTune.bootSplashEnabled", controlType: "toggle" },
+  { id: "perf.autoAnalyzeOnFirstRun", category: "performance", title: "Auto-Tune Best Settings for Detected PC", description: "Automatically scores your PC tier on first launch and selects optimal compute/memory flags.", settingPath: "autoTune.autoAnalyzeOnFirstRun", controlType: "toggle" },
+  { id: "perf.runHardwareAnalysis", category: "performance", title: "Run PC Power Analyzer & Auto-Tune Now", description: "Probes hardware capability live (0-100 score) and auto-configures optimal Dih preset.", actionId: "runHardwareAnalysis", controlType: "action" },
+  { id: "perf.enablePriorityBoost", category: "performance", title: "Win32 Dynamic Thread Priority Boost", description: "Enables Win32 SetProcessPriorityBoost for low-jitter frame scheduler wakeups.", settingPath: "performance.enablePriorityBoost", controlType: "toggle" },
+  { id: "perf.preferPerformanceCores", category: "performance", title: "P-Core / Physical Core Affinity Mask", description: "Pins game & client scheduling onto primary performance cores on multi-thread CPUs.", settingPath: "performance.preferPerformanceCores", controlType: "toggle" },
+  { id: "perf.focusPriorityScaling", category: "performance", title: "Focus-Aware Dynamic Priority Scaling", description: "Automatically elevates priority while playing and relaxes scheduling when alt-tabbed.", settingPath: "performance.focusPriorityScaling", controlType: "toggle" },
+  { id: "perf.disableSmoothScrolling", category: "performance", title: "Disable Chromium Smooth Scrolling (--disable-smooth-scrolling)", description: "Eliminates scroll animation interpolation overhead inside Chromium.", settingPath: "performance.disableSmoothScrolling", controlType: "toggle", requiresRestart: true },
+  { id: "perf.webglLowLatency", category: "performance", title: "Early WebGL2 Desynchronized Low-Latency Context", description: "Injects powerPreference:high-performance & desynchronized canvas hints before WebGL init.", settingPath: "performance.webglLowLatency", controlType: "toggle" },
+  { id: "perf.canvasDprScale", category: "performance", title: "WebGL Render DPR Resolution Scaler (0.5x–1.25x)", description: "Scales effective canvas devicePixelRatio to boost FPS on integrated GPUs or sharpen crispness.", settingPath: "performance.canvasDprScale", controlType: "slider" },
+  { id: "net.pingIntervalMs", category: "performance", title: "Ping Probe Polling Interval (ms)", description: "Tune non-blocking background server RTT sample rate (1500ms fast to 6000ms conservative).", settingPath: "performance.pingIntervalMs", controlType: "number" },
+  { id: "perf.reduceMotionUi", category: "performance", title: "Reduce Motion & Instant UI Transitions", description: "Disables UI transition animations inside Command Center & HUD for zero extra overhead.", settingPath: "performance.reduceMotionUi", controlType: "toggle" },
 
   // --- 2. Real Hardware Metrics & Telemetry (21) ---
   { id: "metrics.statsEnabled", category: "metrics", title: "Real Telemetry HUD Master", description: "Displays verified real-time PC, DXGI GPU, display Hz, FPS, and network metrics over gameplay.", settingPath: "hud.statsEnabled", controlType: "toggle" },
@@ -71,6 +82,16 @@ const FEATURE_REGISTRY = [
   { id: "metrics.sessionUptime", category: "metrics", title: "Session Uptime Timer", description: "Tracks total elapsed client session runtime.", settingPath: "hud.showUptime", controlType: "toggle" },
   { id: "metrics.hudLayout", category: "metrics", title: "Telemetry HUD Layout Switcher", description: "Choose Compact Floating Card, Sleek Top Bar, or Ultra-Minimal Pill.", settingPath: "hud.statsLayout", controlType: "select" },
   { id: "metrics.snapGrid", category: "metrics", title: "Draggable Magnetic 8px HUD Snap", description: "Drag any overlay widget freely with automatic 8px alignment snapping & position saving.", settingPath: "hud.snapToGrid", controlType: "toggle" },
+  { id: "metrics.netGraph", category: "metrics", title: "Live Esports Net-Graph Overlay", description: "Real-time scrolling graph plotting FPS curve, frametime spikes & RTT ping on one canvas.", settingPath: "esportsHud.netGraphEnabled", controlType: "toggle" },
+  { id: "metrics.sessionStatsCard", category: "metrics", title: "Compact Match Session Stats Card", description: "Floating match summary pill showing live K/D, shots clicked, best streak & uptime.", settingPath: "esportsHud.sessionStatsEnabled", controlType: "toggle" },
+  { id: "metrics.weaponSlotBadge", category: "metrics", title: "Active Weapon Slot Badge (1 / 2 / 3)", description: "Clean HUD badge tracking active Primary, Secondary, or Melee slot via hotkeys.", settingPath: "esportsHud.weaponSlotBadge", controlType: "toggle" },
+  { id: "metrics.reloadProgressBar", category: "metrics", title: "Tactical Reload Progress Bar (R)", description: "Animated visual reload timer bar triggered on R press while pointer-locked.", settingPath: "esportsHud.reloadProgressBar", controlType: "toggle" },
+  { id: "metrics.reloadDurationMs", category: "metrics", title: "Reload Timer Duration (ms)", description: "Tune reload bar timing (1000–3500 ms) for AR, SMG, AWP, or LMG.", settingPath: "esportsHud.reloadDurationMs", controlType: "number" },
+  { id: "metrics.pointerLockBadge", category: "metrics", title: "Raw Mouse Pointer Lock LED Badge", description: "Shows authentic LOCKED vs MENU mouse capture state for aim troubleshooting.", settingPath: "esportsHud.pointerLockBadge", controlType: "toggle" },
+  { id: "metrics.hudScale", category: "metrics", title: "Master HUD Widget Scale (0.75x–1.35x)", description: "Uniformly scales floating overlay widgets to fit 1080p, 1440p, or 4K monitors.", settingPath: "esportsHud.hudScale", controlType: "slider" },
+  { id: "metrics.hudOpacity", category: "metrics", title: "HUD Widget Master Opacity", description: "Independent translucency control across floating telemetry & esports widgets.", settingPath: "esportsHud.hudOpacity", controlType: "slider" },
+  { id: "metrics.lockHudDrag", category: "metrics", title: "Lock HUD Positions (Prevent Drag)", description: "Freezes every HUD widget in place so rapid clicks never accidentally move overlays.", settingPath: "esportsHud.lockHudDrag", controlType: "toggle" },
+  { id: "metrics.fpsWarningThreshold", category: "metrics", title: "Low-FPS Alert Threshold", description: "Marks FPS dips below this value (e.g. 60 or 144 FPS) cleanly in Telemetry & Net-Graph.", settingPath: "esportsHud.fpsWarningThreshold", controlType: "number" },
 
   // --- 3. Window, Stealth & Privacy (10) ---
   { id: "win.borderlessFullscreen", category: "window", title: "Borderless Fullscreen Mode (F11)", description: "Zero-chrome native Win32 fullscreen gameplay mode.", settingPath: "window.autoFullscreen", controlType: "toggle" },
@@ -83,6 +104,9 @@ const FEATURE_REGISTRY = [
   { id: "win.screenshotCapture", category: "window", title: "Lossless Client Screenshot (F10)", description: "Captures full-res compositor PNG directly to Pictures/Dih with toast confirmation.", actionId: "captureScreenshot", controlType: "action" },
   { id: "win.hideAllHud", category: "window", title: "Instant Clean Mode / Hide All HUD (F9)", description: "Toggles every Dih overlay off instantly for pure unobstructed view.", actionId: "toggleAllHud", controlType: "action" },
   { id: "win.streamerBlur", category: "window", title: "Streamer Username Privacy Blur", description: "Blurs player username input and lobby identity banners against stream sniping.", settingPath: "hud.streamerPrivacyBlur", controlType: "toggle" },
+  { id: "win.blockContextMenu", category: "window", title: "Suppress In-Game Right-Click Menu", description: "Blocks browser context menu popups during fast ADS flicks over WebGL canvas.", settingPath: "privacyPro.blockContextMenu", controlType: "toggle" },
+  { id: "win.confirmOnClose", category: "window", title: "Confirm Before Closing Window", description: "Asks for confirmation before closing Dih Client to prevent accidental Alt+F4 mid-match.", settingPath: "privacyPro.confirmOnClose", controlType: "toggle" },
+  { id: "win.copyLobbyInvite", category: "window", title: "Copy Deadshot Lobby Link", description: "Copies the current Deadshot match/lobby URL to your clipboard with toast confirmation.", actionId: "copyLobbyInvite", controlType: "action" },
 
   // --- 4. Premium Minimalist Theme & UI (13) ---
   { id: "theme.obsidianSlate", category: "theme", title: "Theme Preset: Obsidian Slate", description: "Default matte charcoal surfaces (#121317) with crisp slate-silver accents (#d4d8df).", actionId: "applyTheme:obsidianSlate", controlType: "action" },
@@ -97,7 +121,25 @@ const FEATURE_REGISTRY = [
   { id: "theme.density", category: "theme", title: "Command Center Density (Cozy / Compact)", description: "Switch compact esports spacing across Command Center lists.", settingPath: "theme.density", controlType: "select" },
   { id: "theme.minimalistGameUi", category: "theme", title: "Deadshot Native Menu Polish", description: "Harmonizes Deadshot lobby panels & settings modals with subtle slate styling.", settingPath: "theme.minimalistGameUi", controlType: "toggle" },
   { id: "theme.customCss", category: "theme", title: "Custom Minimalist Scrollbar & Typography", description: "Applies clean system sans & tabular monospace metrics.", settingPath: "theme.customCssEnabled", controlType: "toggle" },
+  { id: "theme.compactNavRail", category: "theme", title: "Compact Command Center Nav Rail", description: "Uses slimmer navigation rail with tighter tabs for instant switching.", settingPath: "esportsHud.compactNavRail", controlType: "toggle" },
+  { id: "theme.highContrastCursor", category: "theme", title: "High-Contrast Menu Cursor Highlight", description: "Enhances cursor visibility across dark obsidian lobby surfaces.", settingPath: "visuals.highContrastCursor", controlType: "toggle" },
   { id: "theme.resetLayout", category: "theme", title: "Reset All HUD Widget Positions", description: "Restores telemetry, keys overlay, K/D card, and stopwatch to tidy defaults.", actionId: "resetHudPositions", controlType: "action" },
+
+  // --- Pro Crosshair & Visuals/Audio Upgrades (14) ---
+  { id: "xhair.velocitySpread", category: "crosshair", title: "Dynamic Movement Velocity Spread", description: "Expands crosshair gap dynamically while sprinting/strafing on WASD.", settingPath: "crosshairPro.velocitySpread", controlType: "toggle" },
+  { id: "xhair.sniperDotOnlyMode", category: "crosshair", title: "ADS Precision Dot-Only Focus", description: "Hides outer arms automatically while holding Right-Click ADS, leaving pure center dot.", settingPath: "crosshairPro.sniperDotOnlyMode", controlType: "toggle" },
+  { id: "xhair.hitmarkerFlash", category: "crosshair", title: "Diagonal X Hitmarker Reticle Flash", description: "Overlays crisp 4-tick hitmarker flash on shot confirmation while locked in-game.", settingPath: "crosshairPro.hitmarkerFlash", controlType: "toggle" },
+  { id: "xhair.centerDotColor", category: "crosshair", title: "Independent Center Dot Color", description: "Style your center precision dot with its own contrast color separate from crosshair arms.", settingPath: "crosshairPro.centerDotColor", controlType: "color" },
+  { id: "xhair.outlineOpacity", category: "crosshair", title: "Crosshair Outline Alpha Opacity", description: "Fine-tune outer black stroke opacity (0.1–1.0) so distant targets stay sharp.", settingPath: "crosshairPro.outlineOpacity", controlType: "slider" },
+  { id: "xhair.presetDihMinimal", category: "crosshair", title: "Pro Crosshair Preset: Dih Minimal", description: "Balanced platinum 6px cross with crisp micro-gap and subtle outline.", actionId: "applyCrosshairPro:dih_minimal", controlType: "action" },
+  { id: "xhair.presetTenZ", category: "crosshair", title: "Pro Crosshair Preset: Classic Cyan 1-4-2-2", description: "Tournament cyan hollow cross optimized for crisp headshots.", actionId: "applyCrosshairPro:tenz", controlType: "action" },
+  { id: "xhair.presetScreamDot", category: "crosshair", title: "Pro Crosshair Preset: Pure Tap Dot", description: "Ultra-clean 2.5px high-contrast precision headshot dot.", actionId: "applyCrosshairPro:scream", controlType: "action" },
+  { id: "xhair.presetCircleTactical", category: "crosshair", title: "Pro Crosshair Preset: Tactical Circle+Dot", description: "Clean 7px tactical ring with bright center focus dot.", actionId: "applyCrosshairPro:circle_tac", controlType: "action" },
+  { id: "tools.blackEqualizer", category: "tools", title: "SVG Gamma Black Equalizer (Shadow Boost)", description: "Lifts dark map corners & shadowed corridors without blowing out sky highlights.", settingPath: "visuals.blackEqualizer", controlType: "slider" },
+  { id: "tools.digitalVibrance", category: "tools", title: "NVIDIA-Style Digital Vibrance Boost", description: "Punches enemy silhouettes out from muted backgrounds via extra saturation curve.", settingPath: "visuals.digitalVibranceBoost", controlType: "slider" },
+  { id: "tools.vignetteDarkness", category: "tools", title: "Scope Vignette Edge Darkness", description: "Controls edge darkening strength (10%–90%) for Scope Focus Vignette.", settingPath: "visuals.vignetteDarkness", controlType: "slider" },
+  { id: "tools.cleanHideGamePromo", category: "tools", title: "Clean Lobby Promo & Ad Container Hide", description: "Conceals distracting promo cards around Deadshot's home menu for distraction-free focus.", settingPath: "visuals.cleanHideGamePromo", controlType: "toggle" },
+  { id: "tools.hitmarkerAudio", category: "tools", title: "Synthesized Crisp Hitmarker Audio Tick", description: "Plays ultra-low-latency WebAudio confirmation click on pointer-locked shot.", settingPath: "audio.hitmarkerSoundEnabled", controlType: "toggle" },
 
   // --- 5. In-Client Skin Changer (17) ---
   { id: "skins.masterSwap", category: "skins", title: "Master In-Client Skin & Asset Swapper", description: "Intercepts Deadshot weapon/skin textures natively via zero-overhead HTTP 200 streams.", settingPath: "skins.swapperEnabled", controlType: "toggle" },

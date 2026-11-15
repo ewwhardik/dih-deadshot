@@ -890,3 +890,335 @@
   opacity: 1;
   transform: translateY(-1px);
 }
+
+/* --- Reduce Motion & Locked HUD Modes --- */
+:host(.dih-reduce-motion) * {
+  transition: none !important;
+  animation: none !important;
+}
+
+:host(.dih-hud-locked) .dih-draggable {
+  cursor: default !important;
+}
+
+/* --- Animated Boot Hardware Power Analyzer Splash --- */
+.dih-boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: radial-gradient(circle at 50% 42%, rgba(20, 22, 28, 0.94), rgba(10, 11, 14, 0.98));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity 220ms ease;
+}
+
+.dih-boot-overlay.closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dih-boot-card {
+  width: min(620px, 92vw);
+  padding: 22px 24px;
+  background: rgba(16, 17, 22, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.72);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dih-boot-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.dih-boot-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dih-boot-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: dih-pulse-ring 1.6s ease-in-out infinite;
+}
+
+@keyframes dih-pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 216, 223, 0.16); }
+  50% { box-shadow: 0 0 0 8px rgba(212, 216, 223, 0); }
+}
+
+.dih-boot-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.dih-boot-phase {
+  font-size: 10.5px;
+  color: var(--dih-accent);
+  margin-top: 2px;
+}
+
+.dih-boot-score {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dih-boot-bar-track {
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.dih-boot-bar-fill {
+  height: 100%;
+  width: 12%;
+  background: var(--dih-accent);
+  border-radius: 99px;
+  transition: width 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dih-boot-tile {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--dih-border);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dih-boot-hwv {
+  font-size: 11px;
+  color: var(--dih-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dih-boot-mini-track {
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.dih-boot-mini-fill {
+  height: 100%;
+  width: 18%;
+  background: var(--dih-accent);
+  transition: width 420ms ease;
+}
+
+.dih-boot-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 4px;
+  border-top: 1px solid var(--dih-border);
+}
+
+.dih-boot-summary {
+  font-size: 11px;
+  color: var(--dih-muted);
+  line-height: 1.4;
+}
+
+/* --- Esports Pro HUD Additions (NetGraph, Session, Slot, Reload, Pointer Lock) --- */
+.dih-netgraph-widget {
+  width: 244px;
+  padding: 9px 10px;
+}
+
+.dih-ng-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--dih-muted);
+  margin-bottom: 6px;
+}
+
+.dih-ng-canvas {
+  display: block;
+  width: 100%;
+  height: 56px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dih-session-widget {
+  padding: 9px 12px;
+  min-width: 185px;
+}
+
+.dih-ng-sess-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.dih-slot-badge {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.dih-lock-pill {
+  position: fixed;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.dih-lock-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9097a3;
+}
+
+.dih-lock-dot.locked {
+  background: #58c98a;
+  box-shadow: 0 0 8px rgba(88, 201, 138, 0.7);
+}
+
+.dih-reload-bar-wrap {
+  position: fixed;
+  left: 50%;
+  top: calc(50% + 36px);
+  transform: translateX(-50%);
+  width: 150px;
+  height: 16px;
+  background: rgba(12, 13, 17, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 86;
+}
+
+.dih-reload-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--dih-accent);
+}
+
+.dih-reload-bar-txt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #f4f6f9;
+  text-shadow: 0 1px 2px #000;
+}
+
+/* --- Command Center Navigation UX Upgrades --- */
+.dih-cc.compact-rail .dih-rail {
+  width: 210px;
+}
+
+.dih-hero-hw {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dih-score-ring {
+  min-width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--dih-accent);
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dih-subtabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--dih-border);
+  flex-wrap: wrap;
+}
+
+.dih-subtab {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dih-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dih-subtab:hover {
+  color: var(--dih-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dih-subtab.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--dih-text);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.dih-fav-strip {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.dih-pin-btn {
+  background: transparent;
+  border: none;
+  color: var(--dih-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 5px;
+  line-height: 1;
+}
+
+.dih-pin-btn.pinned {
+  color: var(--dih-accent);
+}

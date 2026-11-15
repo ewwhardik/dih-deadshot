@@ -533,6 +533,12 @@ pub fn configure_telemetry(
     }
 }
 
+static PING_INTERVAL_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(3500);
+
+pub fn set_ping_interval_ms(ms: u64) {
+    PING_INTERVAL_MS.store(ms.clamp(1000, 15000), std::sync::atomic::Ordering::Relaxed);
+}
+
 pub fn start_background_telemetry() {
     let should_spawn = {
         let mut g = state_lock().lock().unwrap();
@@ -550,7 +556,10 @@ pub fn start_background_telemetry() {
         // Initial non-blocking probe right away
         run_ping_probe_sync();
         loop {
-            std::thread::sleep(Duration::from_millis(2000));
+            let sleep_ms = PING_INTERVAL_MS
+                .load(std::sync::atomic::Ordering::Relaxed)
+                .clamp(1000, 15000);
+            std::thread::sleep(Duration::from_millis(sleep_ms));
             let (live_ping, auto_guard, target_mb, due_trim) = {
                 let g = state_lock().lock().unwrap();
                 let trim_ready = g

@@ -9,7 +9,9 @@ pub const SCOPE_RANGEFINDER_SVG: &[u8] = include_bytes!("../../swap/presets/scop
 
 const STYLES_CSS: &str = include_str!("../../src/renderer/styles.css");
 const MOD_UTILS: &str = include_str!("../../src/renderer/utils.js");
+const MOD_BOOT: &str = include_str!("../../src/renderer/bootAnalyzer.js");
 const MOD_TELEMETRY: &str = include_str!("../../src/renderer/telemetryHud.js");
+const MOD_NETGRAPH: &str = include_str!("../../src/renderer/netGraphHud.js");
 const MOD_KEYS: &str = include_str!("../../src/renderer/keysOverlay.js");
 const MOD_CROSSHAIR: &str = include_str!("../../src/renderer/crosshairEngine.js");
 const MOD_EXTRA: &str = include_str!("../../src/renderer/extraOverlays.js");
@@ -27,7 +29,9 @@ pub fn build_game_injection_script() -> String {
     let css_literal = serde_json::to_string(STYLES_CSS).unwrap();
     let combined_js = [
         MOD_UTILS,
+        MOD_BOOT,
         MOD_TELEMETRY,
+        MOD_NETGRAPH,
         MOD_KEYS,
         MOD_CROSSHAIR,
         MOD_EXTRA,
@@ -47,6 +51,32 @@ pub fn build_game_injection_script() -> String {
     var ok = host === "deadshot.io" || host === "www.deadshot.io" || host === "127.0.0.1" || host === "localhost";
     if (!ok) return;
   }} catch (e) {{ return; }}
+  // Early WebGL & DPR optimization hook runs at document-start before Deadshot creates its WebGL2 context
+  if (!window.__DIH_EARLY_PERF__) {{
+    window.__DIH_EARLY_PERF__ = true;
+    var earlyCfg = {{}};
+    try {{ earlyCfg = JSON.parse(localStorage.getItem("__dih_early_perf") || "{{}}"); }} catch(_) {{}}
+    if (earlyCfg.webglLowLatency !== false && window.HTMLCanvasElement) {{
+      var origGetCtx = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function(type, attrs) {{
+        if (type === "webgl" || type === "webgl2" || type === "experimental-webgl") {{
+          var next = Object.assign({{ powerPreference: "high-performance", desynchronized: true }}, attrs || {{}});
+          try {{ return origGetCtx.call(this, type, next); }} catch(_) {{}}
+        }}
+        return origGetCtx.call(this, type, attrs);
+      }};
+    }}
+    var dprScale = Number(earlyCfg.canvasDprScale);
+    if (dprScale >= 0.5 && dprScale <= 1.5 && Math.abs(dprScale - 1) > 0.02) {{
+      var origDpr = Number(window.devicePixelRatio) || 1;
+      try {{
+        Object.defineProperty(window, "devicePixelRatio", {{
+          get: function() {{ return Math.max(0.5, Math.min(2.5, origDpr * dprScale)); }},
+          configurable: true
+        }});
+      }} catch(_) {{}}
+    }}
+  }}
   function startDihOverlay() {{
     if (window.__DIH_INJECTED__) return;
     if (!document.body && !document.documentElement) {{

@@ -1,19 +1,22 @@
 {
   "name": "dih-client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "ewwhardik (GitHub & Discord: ewwhardik)",
-  "homepage": "https://github.com/ewwhardik/dih-deadhshot",
+  "homepage": "https://ewwhardik.github.io/dih-deadshot/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ewwhardik/dih-deadhshot.git"
+    "url": "https://github.com/ewwhardik/dih-deadshot.git"
   },
-  "description": "Dih v0.2 — Minimalist High-Performance Deadshot.io Client with Native Rust+C+Win32 WebView2 Host, 10–15 MB Host RAM Budget, Uncapped FPS Telemetry, Corsair RGB, Custom 3D Skin Studio & 156+ Features",
+  "description": "Dih v0.3 — Cross-Platform Deadshot.io Client with Native Rust+Win32 Host (~1.7 MB RAM), Hardware Power Auto-Tune, Uncapped FPS Telemetry, Corsair RGB, Custom 3D Skin Studio & 196 Features",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "test": "node scripts/verify.js",
+    "sync-docs": "node scripts/sync-docs.js",
     "build:native": "powershell -ExecutionPolicy Bypass -File scripts/build-native.ps1",
-    "dist-win": "electron-packager . Dih --platform=win32 --arch=x64 --out=dist --overwrite --no-asar"
+    "dist-win": "electron-packager . Dih --platform=win32 --arch=x64 --out=dist --overwrite --no-asar",
+    "dist-mac": "electron-builder --mac dmg zip --arm64 --x64 --publish never",
+    "dist-linux": "electron-builder --linux AppImage deb tar.gz --x64 --publish never"
   },
   "keywords": [
     "deadshot.io",
@@ -32,6 +35,92 @@
   },
   "devDependencies": {
     "@electron/packager": "^19.0.1",
-    "electron": "^38.7.2"
+    "electron": "^38.7.2",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.ewwhardik.dihclient",
+    "productName": "Dih",
+    "copyright": "Copyright © 2026 ewwhardik (GitHub & Discord: ewwhardik)",
+    "asar": true,
+    "asarUnpack": [
+      "assets/**"
+    ],
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "version.txt",
+      "package.json",
+      "!docs/**",
+      "!native/**",
+      "!dist/**",
+      "!dist-electron/**",
+      "!release-artifacts/**",
+      "!scripts/**",
+      "!*.md"
+    ],
+    "directories": {
+      "output": "dist-electron"
+    },
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "assets/dih-icon-512.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "Dih-Client-${version}-mac-${arch}.${ext}"
+    },
+    "linux": {
+      "category": "Game",
+      "icon": "assets/dih-icon-512.png",
+      "maintainer": "ewwhardik",
+      "synopsis": "Dih — Cross-Platform High-FPS Deadshot.io Client",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Dih-Client-${version}-linux-${arch}.${ext}"
+    },
+    "win": {
+      "icon": "assets/dih-icon-512.png",
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Dih-Client-v${version}-electron-win-${arch}.${ext}"
+    }
   }
 }

@@ -1,76 +1,132 @@
-# Dih Client v0.2 (`dih-deadhshot`)
+<div align="center">
+  <img src="assets/dih-icon.png" alt="Dih Client Logo" width="110" />
+  <h1>Dih Client v0.3 (<code>dih-deadshot</code>)</h1>
+  <p><strong>Minimalist, Cross-Platform High-FPS Deadshot.io Client — Native Rust + C + Win32 Host (~1.7 MB Host RAM), macOS &amp; Linux Builds, PC Power Auto-Tune &amp; 196 Wired Features</strong></p>
 
-Minimalist, obsidian-grey, uncapped-FPS **Deadshot.io** native Windows client engineered in **Rust + C + Win32 + Edge WebView2** (with Electron dual-host parity), built for peak WebGL frame pacing, **10–15 MB** native host RAM overhead, zero-stall networking, and **156+ built-in controls**.
-
-**Developer & Credits**
-- **GitHub:** [`ewwhardik`](https://github.com/ewwhardik) · Repository: [`ewwhardik/dih-deadhshot`](https://github.com/ewwhardik/dih-deadhshot)
-- **Discord:** `ewwhardik`
-
----
-
-## Application Overview
-
-Dih wraps **Deadshot.io** inside a stripped Win32 native host (`Dih.exe`) + C timing/statistics kernel (`fast_stats.c`) without mutating game code, while eliminating wrapper overhead during active matches:
-
-### 1. Compute Modes (`Max Compute` Default vs `Low-End Device`)
-- **`Max Compute` (Default):** Uncapped `2000–3000+ FPS` flags (`--disable-frame-rate-limit`, `--disable-gpu-vsync`, `--force-high-performance-gpu`, `--enable-gpu-rasterization`, `--enable-zero-copy`, `--use-angle=d3d11`), `HIGH_PRIORITY_CLASS` applied across `Dih.exe` and every `msedgewebview2.exe` GPU/Renderer subprocess, Windows 11 **EcoQoS power throttling disabled**, `1ms` high-resolution scheduler timer (`timeBeginPeriod(1)`), `4096 MB` V8 heap ceiling, zero HUD backdrop-blur stalls, and display sleep lock.
-- **`Balanced Esports`:** Uncapped FPS with `ABOVE_NORMAL_PRIORITY_CLASS` hybrid power scaling and `2048 MB` V8 heap.
-- **`Low-End Device`:** Designed for 4–8 GB RAM laptops & integrated GPUs — enables WebView2 `LOW` memory target level (`ICoreWebView2_19`), `60 FPS` software frame pacer cap, `10 MB` host RAM guard target, `--renderer-process-limit=1`, compact disk/media cache caps, `1024 MB` V8 heap, and reduced HUD sampling cadence.
-
-### 2. Host RAM Customization (`10–15 MB` Target)
-- Live split readout tracks **Native Host (`Dih.exe`)** separately from the **WebView2 Chromium/WebGL subprocess tree**.
-- Adjustable **`10–15 MB` Host RAM Target** slider with **Auto Host RAM Guard** gently trims excess working-set pages only on `Dih.exe` — never aggressively evicting WebGL/GPU textures on `msedgewebview2.exe`, preventing mid-gunfight page-fault hitches.
-
-### 3. Network Latency & Zero-Stall Resource Interceptor
-- **Targeted WebView2 Filtering:** Scopes `AddWebResourceRequestedFilter` strictly to Deadshot asset/skin/promo URLs and known ad/tracker domains (no wildcard `*` COM IPC bottleneck on game JS, WASM, matchmaking, or WebSockets).
-- **Non-Blocking Background Ping & Jitter Engine:** Off-thread cached-DNS TCP probe + C-kernel jitter calculation prevents UI stalls while keeping `PING` / `JITTER` live inside the HUD.
-- **QUIC & Encrypted DNS (DoH) Optimizer:** Supports `--enable-quic`, `--disable-background-networking`, `--disable-domain-reliability`, and optional Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), or Quad9 (`9.9.9.9`) DNS-over-HTTPS presets, plus custom configurable Ping Target Host.
-
-### 4. Genuine Hardware & Zero-GC Telemetry HUD
-- **Hardware Detection:** `x86_64` `__cpuid` processor model, DXGI `IDXGIFactory1` GPU & dedicated VRAM, Win32 `EnumDisplaySettingsExW` current & max display refresh rates (`Hz`), Win32 `GetSystemTimes` CPU %, `GlobalMemoryStatusEx` RAM, and full child-process memory tree inspection.
-- **Zero-Allocation Frame Metrics:** Fixed circular `Float64Array` buffers for unhooked `rAF` FPS, Min/Max bounds, `1%` low stability, sub-ms frametime sparkline, and Deadshot `dsio:settings:2` / `dsio:keybinds:2` live inspection.
-
-### 5. 3D Gun Skin Studio, Asset Swapper & Corsair/OpenRGB
-- **Client-Side Skin Changer (`F7`):** Instant in-memory & disk-cached weapon texture overrides across all 7 Deadshot weapon classes (26 official skins across wear tiers `0–4`, `*compsmall`/`*compmobile` sync, custom scope reticles, skybox swaps, and centered `1400×300` obsidian SVG Dih menu logo).
-- **Custom 3D Skin Painter Studio:** Interactive Three.js `.glb` Draco weapon painter exporting custom `1024×1024` skins straight to `%APPDATA%\dih-client\custom-skins`.
-- **Corsair HID & OpenRGB (`127.0.0.1:6742`):** Non-blocking OpenRGB SDK socket bridge + USB HID (`VID 0x1B1C`) scan driving 20 Hz 10-mode reactive RGB lighting (muzzle flash, reload sweep, ADS focus dim, FPS thermal gradient, ping aura, theme sync) and a 6×22 Virtual K70 Studio Lab.
+  <p>
+    <a href="https://ewwhardik.github.io/dih-deadshot/"><strong>Live Interactive Showcase &amp; Sandbox</strong></a> •
+    <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3"><strong>Download v0.3 (Win / Mac / Linux)</strong></a> •
+    <a href="#features-overview"><strong>196 Features</strong></a>
+  </p>
+</div>
 
 ---
 
-## Controls & Default Hotkeys (Rebindable)
+## Verified Resource & Security Benchmarks
+
+### 1. Windows Task Manager: Google Chrome (`1,652.3 MB`) vs Dih Native Host (`1.7 MB`)
+
+Chrome spawns 20+ helper processes, gets throttled with Windows 11 Efficiency Mode (**EcoQoS** green leaf), and consumes **1,652.3 MB** just idling. **Dih Native Host (`Dih.exe`)** runs a purpose-built Rust + C + Win32 + WebView2 shell at **1.7 MB host working set** (`0.1%` CPU), with EcoQoS explicitly disabled across the process tree (`SetProcessPriorityBoost`, P-Core `SetProcessAffinityMask`, and `timeBeginPeriod(1)`).
+
+![Task Manager: Dih Native Host 1.7 MB vs Google Chrome 1,652.3 MB](assets/benchmarks/taskmgr-chrome-vs-dih.png)
+
+### 2. Independent Malware Scan Proof: `0 / 13` Scanners Clean (Jotti)
+
+Verified cleanly compiled PE32+ executable (`Dih.exe`, `1.14 MB`) on Jotti (scan job `pqt3b02jev`) across Avast, Bitdefender, ClamAV, Cyren, Dr.WEB, eScan, Fortinet, G DATA, IKARUS, K7 Security, Kaspersky, Trend Micro, and VBA32 — **0 / 13 scanners reported malware**.
+
+![Jotti Malware Scan Report: Dih.exe 0/13 Clean](assets/benchmarks/jotti-scan-clean.png)
+
+---
+
+## Dih Client v0.3 vs Omniverse (`Typhoonz0/omniverse`) vs Google Chrome
+
+| Capability / Architecture | Dih Client v0.3 (`ewwhardik/dih-deadshot`) | `Typhoonz0/omniverse` | Google Chrome |
+| :--- | :--- | :--- | :--- |
+| **Core Runtime** | **Rust + C + Win32 + WebView2** (Windows flagship) + **macOS &amp; Linux** Electron builds | Electron JS wrapper | Multi-process general browser |
+| **Host Shell RAM Overhead** | **1.7 MB** observed idle (strict `10–15 MB` budget + live trim) | ~180–350 MB Electron shell overhead | **1,652.3 MB** (22 processes captured) |
+| **Windows 11 Scheduling** | **Full EcoQoS tree bypass + `timeBeginPeriod(1)` + P-Core Affinity + Focus Scaling** | Chromium launch flags only | Throttled by Windows EcoQoS (green leaf) |
+| **First-Boot PC Power Analyzer** | **Animated Boot Phase**: scores CPU, GPU, RAM &amp; Hz (`10–100`) &amp; auto-tunes optimal preset | None | None |
+| **Wired Client Features** | **196 features** (Black-EQ, Net-Graph, DPR Scaler, Pinned Favorites, Sub-Tabs) | Launcher, basic swapper &amp; crosshair | 0 native client features |
+| **Interactive Crosshair + Pro HUD** | Reactive spread, hitmarker X + sound, ADS scale, Weapon Slot `1/2/3`, Reload timer, `DIH-XHAIR:` codes | Static overlay image | None |
+| **Built-In 3D Skin Studio** | **Offline Three.js + Draco `.GLB` preview, UV paint brushes &amp; local `.webp` vault** | Static file replacement only | None |
+| **Corsair / OpenRGB Integration** | **Real-time `6x22` key matrix + reactive health/firing/ping/ADS lighting** | None | None |
+| **Cross-Platform Releases** | **Windows (`Dih.exe`), macOS (`arm64` + `x64` `.dmg`/`.zip`), Linux (`.AppImage`/`.deb`/`.tar.gz`)** | Desktop Electron | Cross-platform browser |
+
+---
+
+## Animated Boot Phase &amp; PC Power Auto-Tune
+
+Every time Dih Client boots cleanly (and on first launch auto-configuration), it runs a 3-phase hardware analysis pipeline (`bootAnalyzer.js` + `hw_analyzer.rs` / `systemMetrics.js`):
+
+1. **System Scan:** Probes CPU core/thread count, RAM capacity, DXGI/Metal/OpenGL GPU specs, and live monitor refresh rate (`Hz`).
+2. **Power Scoring (`10–100`):** Classifies the machine into `extreme_workstation`, `esports_desktop`, `balanced_laptop`, or `low_end_pc`.
+3. **Auto-Tune Selection:** Defaults to **`Max Compute`** on capable hardware so WebGL stays `desynchronized` with high-performance scheduling, or safely switches to **`Balanced`** / **`Low-End PC`** (scaling DPR cleanly to preserve FPS). You can switch presets anytime in the Command Center Hero card or re-run analysis.
+
+---
+
+## Interactive Website &amp; Live Client Preview
+
+Explore all **196 features** live in your browser on the **[Dih Client GitHub Pages Showcase](https://ewwhardik.github.io/dih-deadshot/)**:
+
+- **Live PC Power Simulator:** Test hardware tiers &amp; inspect recommended WebGL / Win32 / DPR flags.
+- **Crosshair, Black-EQ &amp; Net-Graph Sandbox:** Design pro crosshairs, generate shareable `DIH-XHAIR:` codes, preview SVG Black Equalizer &amp; live scrolling frame-time/ping graph.
+- **3D Skin Studio &amp; Corsair `6x22` Keyboard Preview:** Preview official skins + reactive Corsair lighting zones (`reactive_tactical`, `fps_thermal`, `ping_health`, `reload_sweep`, etc.).
+- **Searchable 196-Feature Catalog:** Filter all features by category &amp; status.
+
+---
+
+## Cross-Platform Downloads (`v0.3`)
+
+Grab pre-built packages on the **[Releases (`v0.3`)](https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3)** page:
+
+| Platform | Package(s) | Engine &amp; Highlights |
+| :--- | :--- | :--- |
+| **Windows (x64 Flagship)** | `Dih-Client-v0.3-win-x64.zip` | Native Rust + C + Win32 + WebView2 (`1.7 MB` host shell, P-Core affinity, Priority Boost, `timeBeginPeriod(1)`) |
+| **macOS (Apple Silicon &amp; Intel)** | `Dih-Client-0.3.0-mac-arm64.dmg`, `Dih-Client-0.3.0-mac-x64.dmg`, `.zip` | Chromium/Electron with Metal ANGLE backend, `system_profiler` ProMotion Hz &amp; USB Corsair detection |
+| **Linux (x64)** | `Dih-Client-0.3.0-linux-x64.AppImage`, `.deb`, `.tar.gz` | Vulkan/OpenGL backend flags, `lspci`/`xrandr` telemetry &amp; OpenRGB/`ckb-next` support |
+
+---
+
+## <a id="features-overview"></a>Key Capabilities Across 9 Categories (196 Features)
+
+1. **Performance &amp; FPS:** Max Compute default preset, Win32 Process Priority Boost, P-Core affinity mask, Focus Priority Scaling, EcoQoS bypass, `timeBeginPeriod(1)`, `--disable-smooth-scrolling`, early pre-DOM WebGL `desynchronized` + `powerPreference: "high-performance"`, dynamic `canvasDprScale`, live host RAM trimmer (`10–15 MB` budget).
+2. **Real PC Metrics &amp; HUD:** Uncapped RAF FPS counter, `1% Low FPS`, frame-time jitter, scrolling Net-Graph canvas, Session K/D/Kills/Time stats pill, Weapon Slot `1/2/3` badge, `R` reload sweep bar, Pointer Lock status LED, real CPU/GPU/RAM/Monitor Hz polling.
+3. **Window &amp; Privacy:** Borderless / Always-on-Top / Opacity slider, Discord Rich Presence, Context Menu block, Close confirmation dialog, targeted ad/tracker blocker without wildcard COM stalls.
+4. **Grey Minimalist UI &amp; Easy Navigation:** Obsidian/Titanium minimal theme, Hero Hardware Power Card, Pinned Favorites strip (`★` / `☆`), Sub-Tab pills inside dense tabs, filter chips (`All` / `Active On` / `Pinned` / `Restart Flags`), compact rail toggle.
+5. **Skin Changer &amp; 3D Skin Studio:** Official + custom skin interceptor, 7-weapon selector, Three.js + Draco `.GLB` offline 3D inspector, layer paint studio &amp; local `.webp` vault.
+6. **Corsair &amp; OpenRGB Sync:** Real-time `6x22` key matrix with 8 lighting modes and WebHID / OpenRGB TCP packet bridge.
+7. **Crosshair &amp; Visuals/Audio:** Custom dot/gap/length/thickness/outline/ADS/WASD velocity spread, diagonal hitmarker flash + WebAudio synth, SVG `<feComponentTransfer>` Black Equalizer, Digital Vibrance boost, Vignette control.
+
+### Default Hotkeys
 
 | Key | Action |
-|---|---|
-| `RightShift` or `O` | Open / Close Dih Command Center |
-| `F5` | Reload Game & Textures |
-| `F7` | Open Dih 3D Gun Skin Studio, Corsair RGB Lab & Deadshot RE Explorer |
-| `F8` | Master Mute / Unmute Client |
-| `F9` | Hide / Restore All HUD Overlays |
-| `F10` | Capture PNG Screenshot (`%APPDATA%\dih-client\screenshots`) |
-| `F11` | Toggle Borderless Fullscreen |
-| `B` | Toggle Match Stopwatch |
-| `[` / `]` / `\` | Decrement / Track Kills, Deaths & Assists inside K/D Tracker |
+| :--- | :--- |
+| `RightShift` / `o` | Toggle Dih Command Center |
+| `F7` | Open 3D Skin Studio &amp; Corsair Matrix |
+| `F8` | Mute / Unmute Master Audio |
+| `F9` | Hide / Show All Client HUD |
+| `F10` | Capture Clean Screenshot |
+| `F11` | Toggle Fullscreen |
+| `F5` | Quick Reload Game |
+| `b` | Toggle Match Stopwatch |
 
 ---
 
-## Building & Running
-
-### Quick Launch (Release ZIP)
-1. Download `Dih-Client-v0.2-win-x64.zip` from [**Releases**](https://github.com/ewwhardik/dih-deadhshot/releases/tag/v0.2).
-2. Extract anywhere and launch `Dih.exe` (Windows 10/11 x64 with Microsoft Edge WebView2 Runtime).
-
-### Build Native Binary From Source
-Requires Rust (`1.82+` with `x86_64-pc-windows-gnullvm` target & `rust-lld`), Node.js (`v20+`), and MSVC Build Tools (`cvtres.exe`).
+## Building &amp; Testing from Source
 
 ```powershell
-npm.cmd install
-npm.cmd run build:native
+# Install Node dependencies (Electron 38 + electron-builder)
+npm install
+
+# Run full automated verification suite (syntax, registry, PC Power Analyzer, Electron CDP, Native smoke)
+npm test
+
+# Sync docs/features-data.js from src/data/featureRegistry.js
+npm run sync-docs
+
+# Build Native Rust + C + Win32 host (Windows, outputs dist\Dih\Dih.exe)
+npm run build:native
+
+# Build macOS / Linux installers locally (on respective OS)
+npm run dist-mac
+npm run dist-linux
 ```
 
-Packaged output is generated in `dist\Dih\` (`Dih.exe`, `WebView2Loader.dll`, `assets/`, `swap/`, `studio/`).
+---
 
-### Automated Verification Suite
-```powershell
-npm.cmd test
-```
-Runs syntax checks, 156+ feature schema/default validation, compute preset & RAM guard checks, real Win32 hardware detection, OpenRGB binary packet tests, SkinManager resource tests, live Electron CDP Game+Studio end-to-end tests, and native `dist\Dih\Dih.exe --smoke-test` verification.
+## Credits
+
+- **Developer &amp; Maintainer:** **ewwhardik**
+  - GitHub: [`@ewwhardik`](https://github.com/ewwhardik)
+  - Discord: `ewwhardik`
+  - Repository: [`ewwhardik/dih-deadshot`](https://github.com/ewwhardik/dih-deadshot)

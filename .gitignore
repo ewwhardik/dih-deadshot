@@ -1,6 +1,8 @@
 node_modules/
 native/target/
 dist/
+dist-electron/
+release-artifacts/
 *.log
 *.tmp
 dih-profile-*.json

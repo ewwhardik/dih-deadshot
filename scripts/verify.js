@@ -49,18 +49,27 @@ async function testSyntax() {
     }
   };
   walk(path.join(ROOT, "src"));
+  jsFiles.push(path.join(ROOT, "docs", "app.js"), path.join(ROOT, "docs", "features-data.js"));
   for (const file of jsFiles) {
     execFileSync(process.execPath, ["--check", file], { stdio: "pipe" });
   }
   // Verify ESM studio.js parses as ES module cleanly in Chromium later and verify non-empty
   const studioJs = fs.readFileSync(path.join(ROOT, "src", "studio", "studio.js"), "utf8");
   assert(studioJs.includes("DRACOLoader") && studioJs.includes("GLTFLoader"));
-  console.log(`[PASS] Syntax check across ${jsFiles.length} CommonJS/renderer files`);
+  console.log(`[PASS] Syntax check across ${jsFiles.length} CommonJS/renderer/docs JS files`);
 }
 
 function testFeatureRegistryAndCatalog() {
   assert(FEATURE_CATEGORIES.length >= 9, `Expected >=9 feature categories, got ${FEATURE_CATEGORIES.length}`);
-  assert(FEATURE_REGISTRY.length >= 140, `Expected >=140 features, got ${FEATURE_REGISTRY.length}`);
+  assert(FEATURE_REGISTRY.length >= 190, `Expected >=190 features, got ${FEATURE_REGISTRY.length}`);
+
+  const docsDataSrc = fs.readFileSync(path.join(ROOT, "docs", "features-data.js"), "utf8");
+  const docsMatch = docsDataSrc.match(/window\.DIH_DOCS_DATA\s*=\s*(\{[\s\S]*\});/);
+  assert(docsMatch, "docs/features-data.js must define window.DIH_DOCS_DATA");
+  const docsData = JSON.parse(docsMatch[1]);
+  assert.strictEqual(docsData.version, "0.3.0", `Expected docs version 0.3.0, got ${docsData.version}`);
+  assert.strictEqual(docsData.featureCount, FEATURE_REGISTRY.length, "docs/features-data.js out of sync (run npm run sync-docs)");
+  assert.strictEqual(docsData.features?.length, FEATURE_REGISTRY.length, "docs/features-data.js features array length mismatch");
 
   const seenIds = new Set();
   for (const feat of FEATURE_REGISTRY) {
@@ -138,8 +147,13 @@ async function testSystemMetrics() {
   const live = metrics.getLiveMetrics();
   assert(live.ram.totalGb > 0 && live.ram.usedGb > 0);
   assert(typeof live.cpuPercent === "number" && live.cpuPercent >= 0);
+  const analysis = await metrics.analyzeHardwarePower();
+  assert(analysis.powerScore >= 10 && analysis.powerScore <= 100, `Unexpected powerScore: ${analysis.powerScore}`);
+  assert(["extreme_workstation", "esports_desktop", "balanced_laptop", "low_end_pc"].includes(analysis.tier), `Invalid tier: ${analysis.tier}`);
+  assert(["max_compute", "balanced", "low_end"].includes(analysis.recommendedPreset), `Invalid preset: ${analysis.recommendedPreset}`);
+  assert(analysis.recommendations && typeof analysis.recommendations === "object" && analysis.recommendations.presetMode === analysis.recommendedPreset);
   console.log(
-    `[PASS] SystemMetrics real hardware detected: ${hw.cpu.model} | ${hw.gpu.primaryName} | ${hw.displays?.primary?.displayFrequency || "?"}Hz`
+    `[PASS] SystemMetrics real hardware detected: ${hw.cpu.model} | ${hw.gpu.primaryName} | ${hw.displays?.primary?.displayFrequency || "?"}Hz | PowerScore=${analysis.powerScore}/100 (${analysis.tier})`
   );
 }
 
@@ -326,16 +340,27 @@ async function testElectronLiveIntegration(tmpDir) {
         await new Promise(r => setTimeout(r, 150));
         const ccBackdrop = sr.querySelector('.dih-cc-backdrop');
         const ccVisible = Boolean(ccBackdrop && !ccBackdrop.classList.contains('dih-hidden'));
+        const hasHeroCard = Boolean(sr.querySelector('.dih-hero-hw'));
+        const hasFavStrip = Boolean(sr.querySelector('.dih-fav-strip'));
         const navBtns = Array.from(sr.querySelectorAll('.dih-nav-item'));
-        navBtns.forEach(b => b.click());
+        let hasSubTabs = false;
+        for (const b of navBtns) {
+          b.click();
+          if (sr.querySelector('.dih-subtabs')) hasSubTabs = true;
+        }
         await new Promise(r => setTimeout(r, 80));
         const navCount = navBtns.length;
         const catalog = await window.dih.getCatalog();
         const hw = await window.dih.getStaticHardware();
+        const hwAnalysis = await window.dih.runHardwareAnalysis(false);
         await window.dih.openStudio('painter');
         return {
           hasNodeLeak,
           ccVisible,
+          hasHeroCard,
+          hasFavStrip,
+          hasSubTabs,
+          powerScore: hwAnalysis?.analysis?.powerScore || 0,
           navCount,
           featureCount: catalog.FEATURE_REGISTRY.length,
           hz: hw.displays.primary.displayFrequency,
@@ -346,8 +371,12 @@ async function testElectronLiveIntegration(tmpDir) {
 
     assert.strictEqual(gameCheck.hasNodeLeak, false, "Node globals must never leak into Deadshot window");
     assert.strictEqual(gameCheck.ccVisible, true, "Command Center modal failed to open on pill click");
+    assert.strictEqual(gameCheck.hasHeroCard, true, "Overview Hero PC Power card missing");
+    assert.strictEqual(gameCheck.hasFavStrip, true, "Overview Pinned Favorites strip missing");
+    assert.strictEqual(gameCheck.hasSubTabs, true, "Sub-tabs navigation missing inside dense tabs");
+    assert(gameCheck.powerScore >= 10 && gameCheck.powerScore <= 100, "IPC runHardwareAnalysis failed");
     assert.strictEqual(gameCheck.navCount, 7, "Expected 7 navigation tabs in Command Center");
-    assert(gameCheck.featureCount >= 100, "Feature count check failed in IPC");
+    assert(gameCheck.featureCount >= 190, `Feature count check failed in IPC: ${gameCheck.featureCount}`);
     assert(gameCheck.hz > 0, "Monitor Hz detection failed");
 
     // Wait for Studio window target and verify Three.js + Canvas + Corsair + Explorer mounted cleanly
@@ -416,7 +445,8 @@ function testNativeDistribution(tmpDir) {
   );
   const report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
   assert.strictEqual(report.ok, true);
-  assert(report.featureCount >= 140, `Native catalog missing features: ${report.featureCount}`);
+  assert.strictEqual(report.version, "0.3.0", `Native version mismatch: ${report.version}`);
+  assert(report.featureCount >= 190, `Native catalog missing features: ${report.featureCount}`);
   assert.strictEqual(report.studioExists, true, "Studio HTML missing from dist bundle");
   assert.strictEqual(report.threeJsExists, true, "Bundled Three.js missing from dist bundle");
   assert.strictEqual(report.adblockBlockedTest, true, "Native adblocker failed test URL");

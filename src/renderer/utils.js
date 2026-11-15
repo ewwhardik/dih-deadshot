@@ -159,6 +159,21 @@ DIH_NS.utils = (function () {
     s.setProperty("--dih-key-move", t.keyMove || "#d4d8df");
     s.setProperty("--dih-key-action", t.keyAction || "#9ba3b0");
     hostEl.classList.toggle("dih-hud-blur", settings.performance?.noBackdropBlurHud === false);
+    hostEl.classList.toggle("dih-reduce-motion", Boolean(settings.performance?.reduceMotionUi));
+    hostEl.classList.toggle("dih-hud-locked", Boolean(settings.esportsHud?.lockHudDrag));
+  }
+
+  function syncEarlyPerfStorage(settings) {
+    try {
+      const p = settings?.performance || {};
+      window.localStorage.setItem(
+        "__dih_early_perf",
+        JSON.stringify({
+          webglLowLatency: p.webglLowLatency !== false,
+          canvasDprScale: Number(p.canvasDprScale ?? 1.0) || 1.0,
+        })
+      );
+    } catch {}
   }
 
   function makeDraggable(element, widgetId, getSettings, savedPositions = {}) {
@@ -184,6 +199,7 @@ DIH_NS.utils = (function () {
 
     element.addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
+      if (typeof getSettings === "function" && getSettings()?.esportsHud?.lockHudDrag) return;
       if (e.target && e.target.closest("button, input, select")) return;
       dragging = true;
       const rect = element.getBoundingClientRect();
@@ -285,6 +301,14 @@ DIH_NS.utils = (function () {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
         osc.start(now);
         osc.stop(now + 0.055);
+      } else if (type === "hitmarker") {
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(1920, now);
+        osc.frequency.exponentialRampToValueAtTime(2480, now + 0.025);
+        gain.gain.setValueAtTime(vol * 0.72, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+        osc.start(now);
+        osc.stop(now + 0.05);
       } else {
         osc.type = "sine";
         osc.frequency.setValueAtTime(620, now);
@@ -407,6 +431,7 @@ DIH_NS.utils = (function () {
     el,
     makeBrandSvg,
     applyThemeVars,
+    syncEarlyPerfStorage,
     makeDraggable,
     setAudioOptions,
     playTone,

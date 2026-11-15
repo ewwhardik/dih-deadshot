@@ -107,8 +107,17 @@ function applyBootChromiumSwitches(cfg) {
     app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
     app.commandLine.appendSwitch("disable-ipc-flooding-protection");
   }
+  if (perf.disableSmoothScrolling !== false) {
+    app.commandLine.appendSwitch("disable-smooth-scrolling");
+  }
   if (perf.angleBackend && perf.angleBackend !== "default") {
-    app.commandLine.appendSwitch("use-angle", perf.angleBackend);
+    if (process.platform === "win32") {
+      app.commandLine.appendSwitch("use-angle", perf.angleBackend);
+    } else if (process.platform === "darwin" && (perf.angleBackend === "metal" || perf.angleBackend === "gl")) {
+      app.commandLine.appendSwitch("use-angle", perf.angleBackend);
+    } else if (process.platform === "linux" && (perf.angleBackend === "vulkan" || perf.angleBackend === "gl")) {
+      app.commandLine.appendSwitch("use-angle", perf.angleBackend);
+    }
   }
   const heapMb = Number(perf.jsHeapLimitMb) || 4096;
   if (heapMb >= 256) {
@@ -264,7 +273,9 @@ function buildInjectedRendererScript() {
   const cssPath = path.join(rendererDir, "styles.css");
   const moduleFiles = [
     "utils.js",
+    "bootAnalyzer.js",
     "telemetryHud.js",
+    "netGraphHud.js",
     "keysOverlay.js",
     "crosshairEngine.js",
     "extraOverlays.js",
@@ -312,8 +323,14 @@ function createMainWindow() {
   const height = Math.min(900, Math.round(bounds.height * 0.9));
 
   const icoCandidate = path.join(appRoot, "assets", "dih-icon.ico");
-  const pngCandidate = path.join(appRoot, "assets", "dih-icon.png");
-  const iconCandidate = fs.existsSync(icoCandidate) ? icoCandidate : pngCandidate;
+  const pngCandidate = path.join(appRoot, "assets", "dih-icon-512.png");
+  const pngFallback = path.join(appRoot, "assets", "dih-icon.png");
+  const iconCandidate =
+    process.platform === "win32" && fs.existsSync(icoCandidate)
+      ? icoCandidate
+      : fs.existsSync(pngCandidate)
+      ? pngCandidate
+      : pngFallback;
   const winOpts = {
     width,
     height,
@@ -415,6 +432,36 @@ function createMainWindow() {
     }
   });
 
+  mainWindow.on("focus", () => {
+    const perf = settingsStore.settings.performance || {};
+    if (perf.focusPriorityScaling) {
+      systemMetrics.applyProcessPriority(perf.processPriority || "high");
+    }
+  });
+
+  mainWindow.on("blur", () => {
+    const perf = settingsStore.settings.performance || {};
+    if (perf.focusPriorityScaling) {
+      systemMetrics.applyProcessPriority("normal");
+    }
+  });
+
+  mainWindow.on("close", (e) => {
+    if (settingsStore.settings.privacyPro?.confirmOnClose) {
+      const choice = dialog.showMessageBoxSync(mainWindow, {
+        type: "question",
+        buttons: ["Keep Playing", "Exit Dih Client"],
+        defaultId: 0,
+        cancelId: 0,
+        title: "Confirm Exit — Dih Client",
+        message: "Close Dih Client and exit Deadshot.io?",
+      });
+      if (choice === 0) {
+        e.preventDefault();
+      }
+    }
+  });
+
   mainWindow.on("closed", () => {
     mainWindow = null;
     if (studioWindow && !studioWindow.isDestroyed()) {
@@ -437,8 +484,14 @@ function openStudioWindow(initialTab = "painter") {
   }
 
   const icoCandidate = path.join(appRoot, "assets", "dih-icon.ico");
+  const pngHiCandidate = path.join(appRoot, "assets", "dih-icon-512.png");
   const pngCandidate = path.join(appRoot, "assets", "dih-icon.png");
-  const studioIcon = fs.existsSync(icoCandidate) ? icoCandidate : pngCandidate;
+  const studioIcon =
+    process.platform === "win32" && fs.existsSync(icoCandidate)
+      ? icoCandidate
+      : fs.existsSync(pngHiCandidate)
+      ? pngHiCandidate
+      : pngCandidate;
   const studioOpts = {
     width: 1320,
     height: 860,
@@ -521,6 +574,10 @@ function applyRuntimeSettingSideEffects(dotPath, value) {
   }
   if (dotPath === "performance.processPriority") {
     systemMetrics.applyProcessPriority(value);
+  }
+  if (dotPath === "performance.pingIntervalMs") {
+    const ms = Math.max(1000, Math.min(15000, Number(value) || 3500));
+    systemMetrics.startPingLoop(ms);
   }
   if (dotPath === "window.discordRpcEnabled" || dotPath === "window.discordPrivacyMode") {
     discordRpc.setConfig({
@@ -629,6 +686,41 @@ function setupIpcHandlers() {
   ipcMain.handle("dih:probe-ping", () => {
     const host = settingsStore.settings.network?.pingHost || "deadshot.io";
     return systemMetrics.probeDeadshotLatency(host);
+  });
+  ipcMain.handle("dih:run-hardware-analysis", async (_ev, applyRecommended = false) => {
+    const analysis = await systemMetrics.analyzeHardwarePower();
+    let updated = settingsStore.getAll();
+    if (applyRecommended) {
+      updated = settingsStore.applyPerfPreset(analysis.recommendedPreset);
+      const rec = analysis.recommendations || {};
+      updated = settingsStore.updateMany({
+        performance: {
+          canvasDprScale: rec.canvasDprScale ?? 1.0,
+          reduceMotionUi: Boolean(rec.reduceMotionUi),
+          hostRamTargetMb: rec.hostRamTargetMb ?? 12,
+          preferPerformanceCores: Boolean(rec.preferPerformanceCores),
+          disablePowerThrottling: rec.disablePowerThrottling !== false,
+        },
+        autoTune: {
+          completed: true,
+          lastScore: analysis.powerScore,
+          recommendedTier: analysis.tier,
+          detectedSummary: analysis.detectedSummary,
+        },
+      });
+      systemMetrics.applyProcessPriority(updated.performance?.processPriority || "high");
+      broadcastSettings(updated);
+    } else {
+      updated = settingsStore.updateMany({
+        autoTune: {
+          lastScore: analysis.powerScore,
+          recommendedTier: analysis.tier,
+          detectedSummary: analysis.detectedSummary,
+        },
+      });
+      broadcastSettings(updated);
+    }
+    return { analysis, settings: updated };
   });
 
   ipcMain.handle("dih:set-master-mute", (_ev, muted) => {
@@ -885,7 +977,8 @@ app.whenReady().then(async () => {
   setupIpcHandlers();
 
   await systemMetrics.init();
-  systemMetrics.startPingLoop(4000);
+  const pingMs = Math.max(1000, Math.min(15000, Number(settingsStore.settings.performance?.pingIntervalMs) || 3500));
+  systemMetrics.startPingLoop(pingMs);
 
   corsairBridge.setConfig(settingsStore.settings.corsair);
   corsairBridge.scanHardware().catch(() => {});

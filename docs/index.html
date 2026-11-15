@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dih Client — Uncapped High-FPS Deadshot.io Client (Windows, macOS & Linux)</title>
+  <meta name="description" content="Dih Client v0.3: 1.7–15 MB Native Rust+Win32 & cross-platform Deadshot.io client with 196+ features, PC Power Auto-Tune, 3D Skin Studio, Corsair RGB, and uncapped FPS." />
+  <link rel="icon" type="image/png" href="assets/dih-icon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top">
+        <img src="assets/dih-icon.png" alt="Dih Icon" width="28" height="28" class="brand-icon" />
+        <div class="brand-text">
+          <span class="brand-name">DIH CLIENT</span>
+          <span class="brand-tag mono" id="nav-version">v0.3.0 • 196 FEATURES</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="#benchmarks">Chrome vs Dih</a>
+        <a href="#analyzer">PC Analyzer</a>
+        <a href="#playground">Live Previews</a>
+        <a href="#rgb-skins">RGB & Skins</a>
+        <a href="#features">All Features</a>
+        <a href="#downloads" class="btn primary small">Download v0.3</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero container">
+      <div class="hero-copy">
+        <div class="pill mono">NATIVE RUST + WIN32 (WINDOWS) • ELECTRON (MACOS & LINUX)</div>
+        <h1>Uncapped FPS.<br /><span class="accent-grad">1.7 MB Host Shell.</span></h1>
+        <p class="lead">
+          Engineered from the ground up to eliminate browser bloat, Windows Efficiency Mode throttling,
+          and compositor lag. Probes your real CPU, GPU, RAM &amp; Display Hz on boot, automatically tunes
+          optimal client settings, and ships <strong><span id="hero-feat-count">196</span> wired esports features</strong>
+          by <span class="mono">ewwhardik</span>.
+        </p>
+        <div class="hero-cta">
+          <a href="#downloads" class="btn primary">Download v0.3 (Win / Mac / Linux)</a>
+          <a href="#analyzer" class="btn">Try PC Power Analyzer</a>
+          <a href="https://github.com/ewwhardik/dih-deadshot" target="_blank" rel="noopener" class="btn">GitHub Repo</a>
+        </div>
+        <div class="hero-stats mono">
+          <div class="stat-pill"><span class="k">IDLE HOST RAM</span><strong>1.7 MB</strong></div>
+          <div class="stat-pill"><span class="k">CHROME (22 PROCS)</span><strong>1,652.3 MB</strong></div>
+          <div class="stat-pill"><span class="k">WIRED FEATURES</span><strong id="hero-stat-feats">196+</strong></div>
+          <div class="stat-pill"><span class="k">PLATFORMS</span><strong>WIN • MAC • LINUX</strong></div>
+        </div>
+      </div>
+
+      <div class="hero-preview card">
+        <div class="preview-header mono">
+          <span>DIH OVERLAY PREVIEW • SHADOW DOM</span>
+          <span class="status-dot" id="hero-lock-badge">● UNCAPPED MODE</span>
+        </div>
+        <div class="mock-viewport">
+          <div class="mock-hud-top">
+            <div class="mock-tel mono">
+              <div class="t-row"><span>FPS</span><strong id="mock-fps">2140</strong></div>
+              <div class="t-row"><span>1% LOW</span><strong id="mock-low">1480</strong></div>
+              <div class="t-row"><span>HOST RAM</span><strong>1.7 MB</strong></div>
+              <div class="t-row"><span>PING</span><strong id="mock-ping">14 ms</strong></div>
+            </div>
+            <div class="mock-badge mono">DIH • GTX 1650 / 240Hz</div>
+          </div>
+          <div class="mock-reticle" id="hero-reticle">
+            <svg width="40" height="40" viewBox="0 0 40 40">
+              <line x1="20" y1="6" x2="20" y2="15" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+              <line x1="20" y1="25" x2="20" y2="34" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+              <line x1="6" y1="20" x2="15" y2="20" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+              <line x1="25" y1="20" x2="34" y2="20" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+              <line x1="20" y1="6" x2="20" y2="15" stroke="#d4d8df" stroke-width="2" stroke-linecap="round"/>
+              <line x1="20" y1="25" x2="20" y2="34" stroke="#d4d8df" stroke-width="2" stroke-linecap="round"/>
+              <line x1="6" y1="20" x2="15" y2="20" stroke="#d4d8df" stroke-width="2" stroke-linecap="round"/>
+              <line x1="25" y1="20" x2="34" y2="20" stroke="#d4d8df" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="20" cy="20" r="2" fill="#ffffff"/>
+            </svg>
+          </div>
+          <div class="mock-bottom-bar mono">
+            <span>Max Compute Profile • EcoQoS OFF</span>
+            <span>[RightShift] Menu</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 1: Chrome vs Dih & Omniverse Comparison -->
+    <section id="benchmarks" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">REAL TASK MANAGER CAPTURE & ARCHITECTURE COMPARISON</span>
+        <h2>Deadshot in Google Chrome vs Omniverse vs Dih Client</h2>
+        <p class="sub">
+          Playing inside stock Chrome triggers multi-process memory bloat (1.65 GB across 22 processes) and Windows
+          Efficiency Mode throttling. Standard Electron wrappers add heavy JS runtime overhead. Dih strips host bloat
+          down to 1.7 MB while unlocking hardware-aware esports tooling.
+        </p>
+      </div>
+
+      <div class="bench-proof card">
+        <div class="proof-top">
+          <div>
+            <h3>Captured Windows Task Manager Telemetry</h3>
+            <p class="muted">Observed on Windows 11 desktop session alongside Google Chrome (22 active processes).</p>
+          </div>
+          <span class="badge accent mono">~971x LOWER HOST MEMORY</span>
+        </div>
+        <div class="proof-img-wrap">
+          <img src="assets/taskmgr-chrome-vs-dih.png" alt="Windows Task Manager: Dih 1.7 MB vs Google Chrome 1652.3 MB" />
+        </div>
+        <div class="proof-bars">
+          <div class="bar-item">
+            <div class="bar-label mono"><span>Dih Native Host Shell (No EcoQoS Leaf)</span><strong>1.7 MB RAM • 0.1% CPU</strong></div>
+            <div class="bar-track"><div class="bar-fill dih" style="width: 1.2%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label mono"><span>Google Chrome (22 Processes • EcoQoS Throttled)</span><strong>1,652.3 MB RAM • 0.3% CPU</strong></div>
+            <div class="bar-track"><div class="bar-fill chrome" style="width: 100%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bench-proof card" style="margin-top: 18px;">
+        <div class="proof-top">
+          <div>
+            <h3>Verified Clean Native Executable (0 / 13 Malware Detections)</h3>
+            <p class="muted">1.14 MB PE32+ Rust+C native binary scanned independently on Jotti across Avast, Bitdefender, Kaspersky, Trend Micro, Fortinet &amp; more — 0 detections.</p>
+          </div>
+          <span class="badge accent mono">0 / 13 SCANNERS CLEAN</span>
+        </div>
+        <div class="proof-img-wrap">
+          <img src="assets/jotti-scan-clean.png" alt="Jotti Malware Scan Report for Dih.exe: 0 of 13 scanners reported malware" />
+        </div>
+      </div>
+
+      <div class="card table-wrap">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th>Capability / Architecture</th>
+              <th class="col-dih">Dih Client v0.3</th>
+              <th>Typhoonz0 / Omniverse</th>
+              <th>Google Chrome Browser</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Native Core Runtime</td>
+              <td class="col-dih"><strong>Rust + C + Win32 + WebView2</strong> (Win) + macOS/Linux Electron</td>
+              <td>Electron Wrapper (Windows-oriented JS shell)</td>
+              <td>Multi-Process Desktop Browser (20+ processes)</td>
+            </tr>
+            <tr>
+              <td>Observed Shell Overhead</td>
+              <td class="col-dih"><strong>1.7 MB idle (10–15 MB target guard)</strong></td>
+              <td>~180–350 MB Electron runtime overhead</td>
+              <td>1,652.3 MB (Task Manager capture, 22 processes)</td>
+            </tr>
+            <tr>
+              <td>Windows 11 EcoQoS & Timer Bypass</td>
+              <td class="col-dih"><strong>Full Tree Bypass + timeBeginPeriod(1) + P-Core Affinity</strong></td>
+              <td>Limited Chromium switches only</td>
+              <td>Throttled by Windows Efficiency Mode (Green Leaf)</td>
+            </tr>
+            <tr>
+              <td>First-Boot PC Power Analyzer & Auto-Tune</td>
+              <td class="col-dih"><strong>Animated Phase + 0–100 Score + Auto-Config</strong></td>
+              <td>None</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td>Verified Wired Features</td>
+              <td class="col-dih"><strong>196+ Features</strong> (Net-Graph, Black-EQ, DPR Scaler, Favorites)</td>
+              <td>Basic launcher, swapper & simple crosshairs</td>
+              <td>0 native game client features</td>
+            </tr>
+            <tr>
+              <td>Custom 3D Skin Studio (.GLB + UV Paint)</td>
+              <td class="col-dih"><strong>Built-in Offline Three.js + Draco + Layer Brushes</strong></td>
+              <td>Basic static file replacement only</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td>Corsair iCUE / OpenRGB / WebHID 6×22 LED</td>
+              <td class="col-dih"><strong>Real-time 6×22 Matrix + Reactive Firing/ADS/Ping</strong></td>
+              <td>None</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td>WebView2 Com/Ad-Filter Efficiency</td>
+              <td class="col-dih"><strong>Targeted Domain + Game Filter (Zero "*" COM Stalls)</strong></td>
+              <td>Broad Electron interceptor</td>
+              <td>Extensions add extra per-tab RAM</td>
+            </tr>
+            <tr>
+              <td>Cross-Platform Availability</td>
+              <td class="col-dih"><strong>Windows (Native + Electron) • macOS • Linux</strong></td>
+              <td>Desktop Electron</td>
+              <td>Cross-platform browser</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 2: Interactive Boot Hardware Power Analyzer -->
+    <section id="analyzer" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">INTERACTIVE PREVIEW • BOOT PHASE & AUTO-TUNE</span>
+        <h2>Hardware Detection & Power Auto-Tune Phase</h2>
+        <p class="sub">
+          Every launch enters an obsidian diagnostic phase that probes CPU cores, DXGI/Metal GPU VRAM, RAM &amp; Display Hz,
+          calculates your 0–100 Power Index, and applies optimal defaults automatically. Test different machines below:
+        </p>
+      </div>
+
+      <div class="card analyzer-box">
+        <div class="analyzer-controls">
+          <button class="btn small sim-hw-btn active" data-rig="extreme">Extreme Rig (i9-14900K / RTX 4080 / 240Hz)</button>
+          <button class="btn small sim-hw-btn" data-rig="esports">Esports Desktop (i5-12400F / GTX 1650 / 144Hz)</button>
+          <button class="btn small sim-hw-btn" data-rig="laptop">Balanced Laptop (Ryzen 5 / Iris/Vega / 60Hz)</button>
+          <button class="btn small sim-hw-btn" data-rig="low">Low-End PC (Celeron N4020 / UHD / 4GB)</button>
+          <button class="btn small primary" id="detect-browser-hw">Probe My Browser Device</button>
+        </div>
+
+        <div class="boot-sim-screen">
+          <div class="boot-sim-top">
+            <div>
+              <div class="mono boot-sim-phase" id="sim-phase">[PHASE 3/3] OPTIMAL SETTINGS APPLIED</div>
+              <div class="boot-sim-tier" id="sim-tier">Extreme Esports Workstation</div>
+            </div>
+            <div class="sim-score-ring">
+              <span class="mono" id="sim-score">94</span>
+              <small class="mono">/100</small>
+            </div>
+          </div>
+
+          <div class="sim-prog-track"><div class="sim-prog-fill" id="sim-prog" style="width: 100%"></div></div>
+
+          <div class="grid-4" id="sim-hw-cards">
+            <div class="hw-tile">
+              <span class="k mono">CPU (/35)</span>
+              <strong id="sim-cpu">Core i9-14900K (24C/32T)</strong>
+              <div class="mini-bar"><div id="sim-cpu-bar" style="width: 100%"></div></div>
+            </div>
+            <div class="hw-tile">
+              <span class="k mono">GPU &amp; VRAM (/35)</span>
+              <strong id="sim-gpu">RTX 4080 (16 GB)</strong>
+              <div class="mini-bar"><div id="sim-gpu-bar" style="width: 100%"></div></div>
+            </div>
+            <div class="hw-tile">
+              <span class="k mono">RAM (/15)</span>
+              <strong id="sim-ram">32 GB DDR5</strong>
+              <div class="mini-bar"><div id="sim-ram-bar" style="width: 100%"></div></div>
+            </div>
+            <div class="hw-tile">
+              <span class="k mono">DISPLAY HZ (/15)</span>
+              <strong id="sim-hz">240 Hz</strong>
+              <div class="mini-bar"><div id="sim-hz-bar" style="width: 100%"></div></div>
+            </div>
+          </div>
+
+          <div class="sim-applied mono" id="sim-applied">
+            Auto-Applied -> Profile: MAX_COMPUTE • Host RAM Target: 14 MB • Priority: HIGH + P-Core Mask • DPR Scale: 1.0x • WebGL Desync: ON
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Interactive Crosshair + Visual Filters + Net-Graph Playground -->
+    <section id="playground" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">INTERACTIVE PREVIEW • REAL EXPORTABLE CODES</span>
+        <h2>Crosshair Designer, Black Equalizer &amp; Live Net-Graph</h2>
+        <p class="sub">
+          Dial in your exact SVG crosshair shape, center dot color, outline alpha &amp; Black Equalizer shadow lift right in the
+          browser—click anywhere inside the viewport to test the Diagonal X Hitmarker Flash and copy the real <span class="mono">DIH-XHAIR:</span> code into the client.
+        </p>
+      </div>
+
+      <div class="playground-grid">
+        <div class="card pg-viewport" id="pg-viewport">
+          <div class="pg-scene" id="pg-scene">
+            <div class="pg-shadow-corner">DARK SHADOW CORNER TEST<br /><span class="muted">Adjust Black Equalizer slider to lift visibility</span></div>
+            <div class="pg-target-silhouette" title="Simulated enemy silhouette"></div>
+          </div>
+          <div class="pg-netgraph mono">
+            <div class="pg-ng-top"><span>NET-GRAPH LIVE</span><span id="pg-ng-readout">1840 FPS • 0.54ms • 14ms</span></div>
+            <canvas id="pg-ng-canvas" width="240" height="54"></canvas>
+          </div>
+          <div class="pg-xhair-center" id="pg-xhair-host"></div>
+          <div class="pg-hitmarker" id="pg-hitmarker">+</div>
+          <div class="pg-hint mono">Click canvas to trigger Shot Bloom + Hitmarker X</div>
+        </div>
+
+        <div class="card pg-controls">
+          <div class="preset-pills">
+            <button class="btn small pg-preset active" data-preset="dih_minimal">Dih Minimal</button>
+            <button class="btn small pg-preset" data-preset="tenz">Classic Cyan</button>
+            <button class="btn small pg-preset" data-preset="scream">Pure Tap Dot</button>
+            <button class="btn small pg-preset" data-preset="circle_tac">Circle + Dot</button>
+          </div>
+
+          <div class="ctrl-grid">
+            <label>Shape
+              <select id="pg-type">
+                <option value="CrossDot">Cross + Dot</option>
+                <option value="Cross">Classic Cross</option>
+                <option value="Dot">Precision Dot</option>
+                <option value="CircleDot">Circle + Dot</option>
+                <option value="XShaped">X-Reticle</option>
+                <option value="TCross">T-Cross</option>
+                <option value="Chevron">Chevron</option>
+                <option value="Brackets">Brackets</option>
+              </select>
+            </label>
+            <label>Arm Size <span class="mono" id="lbl-size">8px</span>
+              <input type="range" id="pg-size" min="2" max="28" step="1" value="8" />
+            </label>
+            <label>Thickness <span class="mono" id="lbl-thick">2px</span>
+              <input type="range" id="pg-thick" min="1" max="6" step="0.5" value="2" />
+            </label>
+            <label>Gap <span class="mono" id="lbl-gap">3px</span>
+              <input type="range" id="pg-gap" min="0" max="16" step="1" value="3" />
+            </label>
+            <label>Center Dot <span class="mono" id="lbl-dot">2px</span>
+              <input type="range" id="pg-dot" min="0" max="6" step="0.5" value="2" />
+            </label>
+            <label>Outline Alpha <span class="mono" id="lbl-outa">0.85</span>
+              <input type="range" id="pg-outa" min="0" max="1" step="0.05" value="0.85" />
+            </label>
+            <label>Arm Color
+              <input type="color" id="pg-color" value="#d4d8df" />
+            </label>
+            <label>Center Dot Color
+              <input type="color" id="pg-dotcol" value="#ffffff" />
+            </label>
+            <label>Black Equalizer (Shadow Lift) <span class="mono" id="lbl-beq">15</span>
+              <input type="range" id="pg-beq" min="0" max="50" step="2" value="15" />
+            </label>
+            <label>Digital Vibrance Boost <span class="mono" id="lbl-vib">20%</span>
+              <input type="range" id="pg-vib" min="0" max="100" step="5" value="20" />
+            </label>
+          </div>
+
+          <div class="share-box">
+            <span class="k mono">LIVE EXPORTABLE CLIENT CODE</span>
+            <div class="share-row">
+              <input type="text" id="pg-code" class="mono" readonly />
+              <button class="btn primary small" id="pg-copy-code">Copy Code</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Interactive 6x22 Corsair RGB & 7-Gun Skin Swapper -->
+    <section id="rgb-skins" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">INTERACTIVE PREVIEW • HARDWARE SYNC & ASSET ENGINE</span>
+        <h2>Corsair 6×22 Reactive RGB Matrix &amp; 7-Gun Skin Swapper</h2>
+      </div>
+
+      <div class="grid-2">
+        <div class="card rgb-card">
+          <div class="card-top">
+            <div>
+              <h3>6×22 Virtual Corsair K70 + OpenRGB</h3>
+              <p class="muted">Real-time zone visualization driven by shot transients, ADS &amp; ping latency.</p>
+            </div>
+            <select id="rgb-mode" class="compact-select">
+              <option value="reactive_tactical">Reactive Tactical</option>
+              <option value="fps_meter">FPS Thermal Meter</option>
+              <option value="ping_radar">Ping Latency Radar</option>
+              <option value="cyber_wave">Monochrome Wave</option>
+              <option value="pulse">Subtle Slate Pulse</option>
+            </select>
+          </div>
+          <div class="k70-grid" id="k70-grid"></div>
+          <div class="rgb-actions">
+            <button class="btn small" id="rgb-fire">Simulate Fire (M1)</button>
+            <button class="btn small" id="rgb-ads">Toggle ADS (M2)</button>
+            <button class="btn small" id="rgb-reload">Simulate Reload (R)</button>
+          </div>
+        </div>
+
+        <div class="card skins-card">
+          <div class="card-top">
+            <div>
+              <h3>7-Gun Swapper + Offline 3D Studio</h3>
+              <p class="muted">Swap compressed <span class="mono">.webp</span> textures on AR2, Vector, AWP, Shotgun, DMR, Pistol &amp; LMG.</p>
+            </div>
+            <span class="badge mono">ZERO-COPY STREAM</span>
+          </div>
+          <div class="weapon-tabs" id="weapon-tabs"></div>
+          <div class="skin-controls">
+            <label>Official Compressed Skin
+              <select id="skin-select"></select>
+            </label>
+            <label>Wear Level: <span class="mono" id="skin-wear-lbl">0 (Factory New)</span>
+              <input type="range" id="skin-wear" min="0" max="4" step="1" value="0" />
+            </label>
+          </div>
+          <div class="swap-preview mono" id="skin-route-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Complete 196+ Features Catalog Explorer -->
+    <section id="features" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">FULL CLIENT CAPABILITIES EXPLORER</span>
+        <h2>Every Single Wired Feature (<span id="catalog-count">196</span>)</h2>
+        <p class="sub">Search or filter through the live feature registry bundled directly inside Dih Client.</p>
+      </div>
+
+      <div class="card catalog-shell">
+        <div class="catalog-toolbar">
+          <input type="search" id="feat-search" placeholder="Search 196+ features (e.g. Black Equalizer, P-Core, Net-Graph, DoH, GLB, EcoQoS)..." />
+          <label class="chk mono"><input type="checkbox" id="feat-restart-only" /> Boot / Restart Flags Only</label>
+        </div>
+        <div class="cat-chips" id="cat-chips"></div>
+        <div class="features-grid" id="features-grid"></div>
+      </div>
+    </section>
+
+    <!-- Section 6: Downloads (Windows, macOS, Linux) -->
+    <section id="downloads" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">CROSS-PLATFORM RELEASE • v0.3.0</span>
+        <h2>Download Dih Client for Windows, macOS &amp; Linux</h2>
+      </div>
+
+      <div class="grid-3">
+        <div class="card dl-card">
+          <div class="os-badge mono">WINDOWS x64 • FLAGSHIP</div>
+          <h3>Native Rust + Win32 + WebView2</h3>
+          <p class="muted">1.7–15 MB host shell, Win32 Priority Boost, EcoQoS bypass, P-Core affinity, TimeBeginPeriod(1) &amp; embedded WebView2.</p>
+          <ul class="dl-list mono">
+            <li>Dih-Client-v0.3-win-x64.zip</li>
+            <li>No external Node/Chromium bloat</li>
+          </ul>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3" target="_blank" rel="noopener" class="btn primary full">Download Windows v0.3</a>
+        </div>
+
+        <div class="card dl-card">
+          <div class="os-badge mono">MACOS • APPLE SILICON &amp; INTEL</div>
+          <h3>Dih Client for macOS (.dmg / .zip)</h3>
+          <p class="muted">Metal GPU ANGLE acceleration, ProMotion 120Hz detection via system_profiler, OpenRGB &amp; Full 3D Skin Studio.</p>
+          <ul class="dl-list mono">
+            <li>Dih-Client-0.3.0-mac-arm64.dmg</li>
+            <li>Dih-Client-0.3.0-mac-x64.dmg</li>
+          </ul>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3" target="_blank" rel="noopener" class="btn full">Download macOS v0.3</a>
+        </div>
+
+        <div class="card dl-card">
+          <div class="os-badge mono">LINUX x64 • APPIMAGE / DEB</div>
+          <h3>Dih Client for Linux</h3>
+          <p class="muted">Vulkan &amp; OpenGL backend support, xrandr/lspci telemetry, OpenRGB / ckb-next Corsair detection &amp; full overlay HUD.</p>
+          <ul class="dl-list mono">
+            <li>Dih-Client-0.3.0-linux-x64.AppImage</li>
+            <li>Dih-Client-0.3.0-linux-x64.deb</li>
+            <li>Dih-Client-0.3.0-linux-x64.tar.gz</li>
+          </ul>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.3" target="_blank" rel="noopener" class="btn full">Download Linux v0.3</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container">
+    <div class="footer-inner">
+      <div class="brand">
+        <img src="assets/dih-icon.png" alt="Dih Icon" width="24" height="24" />
+        <span><strong>Dih Client</strong> — Created &amp; maintained by <strong>ewwhardik</strong></span>
+      </div>
+      <div class="footer-links mono">
+        <a href="https://github.com/ewwhardik/dih-deadshot" target="_blank" rel="noopener">GitHub: ewwhardik/dih-deadshot</a>
+        <button class="btn small" id="copy-discord">Discord: ewwhardik (Copy)</button>
+      </div>
+    </div>
+  </footer>
+
+  <script src="features-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

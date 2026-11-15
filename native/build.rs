@@ -228,9 +228,9 @@ fn build_version_resource() -> Vec<u8> {
     let mut fixed = Vec::new();
     push_u32(&mut fixed, 0xFEEF04BD); // dwSignature
     push_u32(&mut fixed, 0x00010000); // dwStrucVersion
-    push_u32(&mut fixed, 0x00000002); // dwFileVersionMS (0.2)
+    push_u32(&mut fixed, 0x00000003); // dwFileVersionMS (0.3)
     push_u32(&mut fixed, 0x00000000); // dwFileVersionLS (0.0)
-    push_u32(&mut fixed, 0x00000002); // dwProductVersionMS (0.2)
+    push_u32(&mut fixed, 0x00000003); // dwProductVersionMS (0.3)
     push_u32(&mut fixed, 0x00000000); // dwProductVersionLS (0.0)
     push_u32(&mut fixed, 0x0000003F); // dwFileFlagsMask
     push_u32(&mut fixed, 0);          // dwFileFlags
@@ -243,12 +243,12 @@ fn build_version_resource() -> Vec<u8> {
     let pairs = [
         ("CompanyName", "ewwhardik"),
         ("FileDescription", "Dih - Native Uncapped Deadshot.io Client"),
-        ("FileVersion", "0.2.0.0"),
+        ("FileVersion", "0.3.0.0"),
         ("InternalName", "Dih"),
         ("LegalCopyright", "ewwhardik (GitHub & Discord: ewwhardik)"),
         ("OriginalFilename", "Dih.exe"),
         ("ProductName", "Dih Client"),
-        ("ProductVersion", "0.2.0.0"),
+        ("ProductVersion", "0.3.0.0"),
         ("Comments", "Minimalist High-FPS Deadshot.io Client | GitHub: ewwhardik | Discord: ewwhardik"),
     ];
 

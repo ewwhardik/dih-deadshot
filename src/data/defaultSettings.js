@@ -62,6 +62,46 @@ const THEME_PRESETS = {
 const DEFAULT_SETTINGS = {
   clientName: "Dih",
   firstLaunchComplete: true,
+  autoTune: {
+    bootSplashEnabled: true,
+    autoAnalyzeOnFirstRun: true,
+    completed: false,
+    lastScore: 0,
+    recommendedTier: "esports_desktop",
+    detectedSummary: "",
+  },
+  esportsHud: {
+    netGraphEnabled: false,
+    sessionStatsEnabled: false,
+    weaponSlotBadge: false,
+    reloadProgressBar: false,
+    reloadDurationMs: 1850,
+    pointerLockBadge: true,
+    hudScale: 1.0,
+    hudOpacity: 0.92,
+    lockHudDrag: false,
+    fpsWarningThreshold: 60,
+    compactNavRail: false,
+    pinnedFeatureIds: [
+      "perf.runHardwareAnalysis",
+      "perf.disableFrameRateLimit",
+      "crosshair.enabled",
+      "metrics.netGraph",
+      "skins.masterSwap",
+      "tools.blackEqualizer",
+    ],
+  },
+  crosshairPro: {
+    velocitySpread: false,
+    sniperDotOnlyMode: false,
+    hitmarkerFlash: true,
+    centerDotColor: "#ffffff",
+    outlineOpacity: 0.85,
+  },
+  privacyPro: {
+    blockContextMenu: true,
+    confirmOnClose: false,
+  },
   hotkeys: {
     toggleGui: "RightShift",
     toggleGuiAlt: "o",
@@ -93,6 +133,14 @@ const DEFAULT_SETTINGS = {
     webviewMemoryMode: "normal", // normal (Max Compute keep-hot) | low (Low-End Device footprint)
     jsHeapLimitMb: 4096, // 512 | 1024 | 2048 | 4096 MB V8 heap ceiling
     presetMode: "max_compute", // max_compute (default) | balanced | low_end
+    enablePriorityBoost: true, // Win32 SetProcessPriorityBoost dynamic wakeups
+    preferPerformanceCores: false, // Pin primary cores on 8+ thread CPUs
+    focusPriorityScaling: false, // Boost priority while focused, relax when unfocused
+    disableSmoothScrolling: true, // --disable-smooth-scrolling flag
+    webglLowLatency: true, // Pre-WebGL high-performance + desynchronized hint
+    canvasDprScale: 1.0, // 0.5 - 1.25 WebGL render resolution scale
+    pingIntervalMs: 3500, // Background ping worker interval in ms
+    reduceMotionUi: false, // Instant HUD & modal transitions
   },
   network: {
     lowLatencyNetworking: true, // Stops Edge background updater/telemetry traffic spikes
@@ -246,6 +294,11 @@ const DEFAULT_SETTINGS = {
     blueLightShield: false,
     preset: "clean", // clean | esports_vibrance | crisp_clarity | noir_slate | night_shield
     scopeVignetteEnhancer: false,
+    blackEqualizer: 0, // 0..50 SVG shadow lift without blowing out highlights
+    digitalVibranceBoost: 0, // 0..100 extra saturation boost
+    vignetteDarkness: 45, // 10..90 vignette edge alpha percent
+    cleanHideGamePromo: true, // Hide distracting lobby promo ads
+    highContrastCursor: false,
   },
   audio: {
     masterMuted: false,
@@ -253,6 +306,7 @@ const DEFAULT_SETTINGS = {
     playClientKillTone: false,
     playClientHeadshotTone: false,
     audioLimiterEnabled: false,
+    hitmarkerSoundEnabled: false,
   },
   deadshotSync: {
     autoSyncOnLoad: false,
