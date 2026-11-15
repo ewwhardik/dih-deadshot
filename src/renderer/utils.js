@@ -78,7 +78,7 @@ DIH_NS.utils = (function () {
       saveSkinPreset: (name) => rpc("saveSkinPreset", { name }),
       applySkinPreset: (name) => rpc("applySkinPreset", { name }),
       deleteSkinPreset: (name) => rpc("deleteSkinPreset", { name }),
-      openStudio: (tab = "painter", weapon = "") => rpc("openStudio", { tab, weapon }),
+      openStudio: (tab = "corsair", weapon = "") => rpc("openStudio", { tab, weapon }),
       getCorsairStatus: () => rpc("getCorsairStatus"),
       rescanCorsair: () => rpc("rescanCorsair"),
       connectOpenRgb: (host, port) => rpc("connectOpenRgb", { host, port }),
@@ -145,36 +145,46 @@ DIH_NS.utils = (function () {
     return svg;
   }
 
+  // Custom properties on the shadow host cascade into every node, so only write the ones
+  // that actually changed — otherwise each settings toggle restyles the whole overlay + menu.
   function applyThemeVars(hostEl, settings) {
     if (!hostEl || !settings?.theme) return;
     const t = settings.theme;
     const s = hostEl.style;
-    s.setProperty("--dih-accent", t.accent || "#d4d8df");
-    s.setProperty("--dih-surface", t.surface || "#121317");
-    s.setProperty("--dih-elevated", t.elevated || "#1a1c22");
-    s.setProperty("--dih-text", t.textPrimary || "#f2f4f7");
-    s.setProperty("--dih-muted", t.textSecondary || "#9097a3");
-    s.setProperty("--dih-border", t.border || "rgba(255,255,255,0.085)");
-    s.setProperty("--dih-opacity", String(t.bgOpacity ?? 0.88));
-    s.setProperty("--dih-blur", `${Number(t.blurPx ?? 14)}px`);
-    s.setProperty("--dih-radius", `${Number(t.compactCornerRadius ?? 10)}px`);
-    s.setProperty("--dih-key-move", t.keyMove || "#d4d8df");
-    s.setProperty("--dih-key-action", t.keyAction || "#9ba3b0");
+    const vars = {
+      "--dih-accent": t.accent || "#d4d8df",
+      "--dih-surface": t.surface || "#121317",
+      "--dih-elevated": t.elevated || "#1a1c22",
+      "--dih-text": t.textPrimary || "#f2f4f7",
+      "--dih-muted": t.textSecondary || "#9097a3",
+      "--dih-border": t.border || "rgba(255,255,255,0.085)",
+      "--dih-opacity": String(t.bgOpacity ?? 0.88),
+      "--dih-blur": `${Number(t.blurPx ?? 14)}px`,
+      "--dih-radius": `${Number(t.compactCornerRadius ?? 10)}px`,
+      "--dih-key-move": t.keyMove || "#d4d8df",
+      "--dih-key-action": t.keyAction || "#9ba3b0",
+    };
+    for (const k in vars) {
+      if (s.getPropertyValue(k) !== vars[k]) s.setProperty(k, vars[k]);
+    }
     hostEl.classList.toggle("dih-hud-blur", settings.performance?.noBackdropBlurHud === false);
     hostEl.classList.toggle("dih-reduce-motion", Boolean(settings.performance?.reduceMotionUi));
     hostEl.classList.toggle("dih-hud-locked", Boolean(settings.esportsHud?.lockHudDrag));
   }
 
+  let lastEarlyPerf = "";
   function syncEarlyPerfStorage(settings) {
     try {
       const p = settings?.performance || {};
-      window.localStorage.setItem(
-        "__dih_early_perf",
-        JSON.stringify({
-          webglLowLatency: p.webglLowLatency !== false,
-          canvasDprScale: Number(p.canvasDprScale ?? 1.0) || 1.0,
-        })
-      );
+      const next = JSON.stringify({
+        webglLowLatency: p.webglLowLatency !== false,
+        canvasDprScale: Number(p.canvasDprScale ?? 1.0) || 1.0,
+      });
+      // localStorage writes are synchronous; skip the no-op ones on every settings refresh.
+      if (next !== lastEarlyPerf) {
+        lastEarlyPerf = next;
+        window.localStorage.setItem("__dih_early_perf", next);
+      }
     } catch {}
   }
 

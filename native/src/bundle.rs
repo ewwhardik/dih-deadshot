@@ -11,13 +11,6 @@ pub const GZ_CATALOG_JS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studi
 const GZ_STUDIO_HTML: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_html.gz"));
 const GZ_STUDIO_CSS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_css.gz"));
 const GZ_STUDIO_JS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_js.gz"));
-const GZ_STUDIO_AIM: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_aim.gz"));
-const GZ_STUDIO_BAKER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/studio_baker.gz"));
-const GZ_THREE_CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_core.gz"));
-const GZ_THREE_MOD: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_mod.gz"));
-const GZ_THREE_ORBIT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_orbit.gz"));
-const GZ_THREE_GLTF: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_gltf.gz"));
-const GZ_THREE_UTILS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/three_utils.gz"));
 
 pub struct EmbeddedStudioAsset {
     pub bytes: &'static [u8],
@@ -32,14 +25,7 @@ pub fn resolve_embedded_studio_asset(rel: &str) -> Option<EmbeddedStudioAsset> {
         "studio.css" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_CSS, mime: "text/css; charset=utf-8", gzipped: true }),
         "catalog.js" => Some(EmbeddedStudioAsset { bytes: GZ_CATALOG_JS, mime: "application/javascript; charset=utf-8", gzipped: true }),
         "studio.js" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_JS, mime: "application/javascript; charset=utf-8", gzipped: true }),
-        "aimTrainer.js" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_AIM, mime: "application/javascript; charset=utf-8", gzipped: true }),
-        "shaderBaker.js" => Some(EmbeddedStudioAsset { bytes: GZ_STUDIO_BAKER, mime: "application/javascript; charset=utf-8", gzipped: true }),
         "dih-icon.png" | "../assets/dih-icon.png" => Some(EmbeddedStudioAsset { bytes: DIH_LOGO_SVG, mime: "image/svg+xml", gzipped: false }),
-        "vendor/three/build/three.core.min.js" | "vendor/three/build/three.core.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_CORE, mime: "application/javascript; charset=utf-8", gzipped: true }),
-        "vendor/three/build/three.module.min.js" | "vendor/three/build/three.module.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_MOD, mime: "application/javascript; charset=utf-8", gzipped: true }),
-        "vendor/three/jsm/controls/OrbitControls.js" | "vendor/three/examples/jsm/controls/OrbitControls.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_ORBIT, mime: "application/javascript; charset=utf-8", gzipped: true }),
-        "vendor/three/jsm/loaders/GLTFLoader.js" | "vendor/three/examples/jsm/loaders/GLTFLoader.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_GLTF, mime: "application/javascript; charset=utf-8", gzipped: true }),
-        "vendor/three/jsm/utils/BufferGeometryUtils.js" | "vendor/three/examples/jsm/utils/BufferGeometryUtils.js" => Some(EmbeddedStudioAsset { bytes: GZ_THREE_UTILS, mime: "application/javascript; charset=utf-8", gzipped: true }),
         _ => None,
     }
 }

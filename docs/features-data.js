@@ -1,7 +1,7 @@
 // Synchronized catalog bundle for Dih Client v0.4.0 by ewwhardik.
 window.DIH_DOCS_DATA = {
   "version": "0.4.0",
-  "generatedAt": "2026-11-15T17:12:38.830Z",
+  "generatedAt": "2026-11-15T19:05:45.260Z",
   "featureCount": 201,
   "categories": [
     {
@@ -31,7 +31,7 @@ window.DIH_DOCS_DATA = {
     },
     {
       "id": "studio",
-      "label": "3D Skin Studio",
+      "label": "3D & Aim (Soon)",
       "order": 6
     },
     {
@@ -1133,120 +1133,120 @@ window.DIH_DOCS_DATA = {
     {
       "id": "studio.openWindow",
       "category": "studio",
-      "title": "Launch 3D Gun Skin Studio (F7)",
-      "description": "Opens dedicated isolated Three.js + UV Paint Studio window.",
+      "title": "3D Gun Skin Studio (Coming Soon)",
+      "description": "Dedicated Three.js UV paint module is coming soon; use live 2D Royal Flush .frag packs in Skin Packs now.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.realGlbViewer",
       "category": "studio",
-      "title": "Live 3D .GLB Weapon Model Previewer",
-      "description": "Inspect ar2.glb, awp.glb, vector.glb, shotgun.glb, dmr.glb, pistolanim.glb & lmg.glb with OrbitControls.",
+      "title": "Live 3D .GLB Weapon Model Previewer (Coming Soon)",
+      "description": "Interactive 3D weapon inspect for ar2, awp, vector, shotgun, dmr, pistol & lmg is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.aimTrainer",
       "category": "studio",
-      "title": "7-Gun Spray-Calibrated Aim Trainer (Insert)",
-      "description": "Dedicated Pointer-Lock 3D trainer calibrated to each Deadshot weapon's RPM, recoil curve, pellets, bloom & ADS zoom.",
+      "title": "7-Gun Spray-Calibrated Aim Trainer (Coming Soon)",
+      "description": "Dedicated 7-gun recoil & flick trainer (Insert) is coming soon while optimizing frame pacing.",
       "actionId": "openStudio:aimtrainer",
       "controlType": "action"
     },
     {
       "id": "studio.lightweightGlb",
       "category": "studio",
-      "title": "Zero-Blocker Native GLTFLoader & Vertex Tint",
-      "description": "Decodes Deadshot .glb weapons directly with PBR texture preservation and embedded zero-file packaging.",
+      "title": "Native GLTFLoader & Vertex Tint (Coming Soon)",
+      "description": "Offline .glb weapon decoding & vertex tinting pipeline is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.uvMaskOverlay",
       "category": "studio",
-      "title": "Official UV Part Mask & Wire Guide",
-      "description": "Overlays ar2mask.png / awpmask.png / vectormask.png pixel-aligned onto your paint canvas.",
+      "title": "Official UV Part Mask & Wire Guide (Coming Soon)",
+      "description": "Interactive UV layer painting with ar2mask / awpmask overlay is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.freehandBrush",
       "category": "studio",
-      "title": "2D UV Canvas Brush, Line & Eraser",
-      "description": "Paint directly onto the loaded gun atlas with size, hardness, blend mode & opacity.",
+      "title": "2D UV Canvas Brush, Line & Eraser (Coming Soon)",
+      "description": "Interactive UV canvas brush tools are coming soon; live shader pack baking is active in Skin Packs.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.colorReplacer",
       "category": "studio",
-      "title": "Full UV Color Grading & Recolor Engine",
-      "description": "Shift hue, saturation, brightness, contrast or monochrome tint across any official gun UV.",
+      "title": "Interactive UV Recolor Studio (Coming Soon)",
+      "description": "Per-pixel studio recoloring UI is coming soon; use the 7-Gun Custom Pack Builder palette controls.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.proceduralCamo",
       "category": "studio",
-      "title": "Procedural Camo Pattern Generator",
-      "description": "Generate Slate Topo, Carbon Weave, Tiger Stripe, Hex Mesh & Geometric patterns onto UV.",
+      "title": "3D Studio Procedural Camo Canvas (Coming Soon)",
+      "description": "Interactive Studio canvas camo brushes are coming soon; 7-Gun Pack Builder supports Carbon, Topo, Tiger & Royal Flush.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.gradientPainter",
       "category": "studio",
-      "title": "Directional & Metallic Fade Painter",
-      "description": "Blend two or three colors seamlessly across barrel-to-stock UV space.",
+      "title": "3D Studio Directional Fade Brush (Coming Soon)",
+      "description": "Manual Studio gradient painting is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.stickerText",
       "category": "studio",
-      "title": "Custom Clan Tag & Image Decal Stamper",
-      "description": "Stamp typography badges directly onto weapon UV maps.",
+      "title": "Custom Clan Tag & Decal Stamper (Coming Soon)",
+      "description": "UV typography stamp tool in 3D Studio is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.wearSimulator",
       "category": "studio",
-      "title": "Procedural Edge Wear & Scratch Layer",
-      "description": "Add realistic metallic edge wear and subtle battle patina on demand.",
+      "title": "Procedural Edge Wear Brush (Coming Soon)",
+      "description": "Manual wear painting in 3D Studio is coming soon (official Wear 0–4 remains live per gun).",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.multiLayerUndo",
       "category": "studio",
-      "title": "20-Step Non-Destructive Paint Undo",
-      "description": "Step backward through edits seamlessly on the 2D skin canvas.",
+      "title": "20-Step Studio Paint Undo (Coming Soon)",
+      "description": "Canvas history stack for 3D Studio is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.live3dSync",
       "category": "studio",
-      "title": "Instant 2D -> 3D CanvasTexture Sync",
-      "description": "Every brushstroke immediately updates the spinning 3D WebGL gun model.",
+      "title": "Instant 2D -> 3D CanvasTexture Sync (Coming Soon)",
+      "description": "Real-time 3D viewport sync is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.exportWebp",
       "category": "studio",
-      "title": "Export Game-Ready .WEBP Skin",
-      "description": "Compiles painted UV canvas into high-efficiency .webp skin + recipe JSON.",
+      "title": "Interactive Canvas .WEBP Export (Coming Soon)",
+      "description": "Use live .frag shader export & 7-Gun Baker in Skin Packs; manual 3D canvas export is coming soon.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },
     {
       "id": "studio.instantApply",
       "category": "studio",
-      "title": "One-Click Apply Studio Skin In-Game",
-      "description": "Saves skin, equips it to the selected weapon slot, and flushes texture cache.",
+      "title": "One-Click Studio Skin Apply (Coming Soon)",
+      "description": "3D Studio direct apply is coming soon; instant Vault & .frag 7-gun equip is live in Skin Packs.",
       "actionId": "openStudio:painter",
       "controlType": "action"
     },

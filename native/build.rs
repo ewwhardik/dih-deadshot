@@ -151,51 +151,18 @@ new vm.Script(overlayJs, { filename: 'overlay_bundle.js' });
 fs.writeFileSync(path.join(outDir, 'overlay_bundle.js.gz'), zlib.gzipSync(Buffer.from(overlayJs), { level: 9 }));
 
 const studioHtml = fs.readFileSync('src/studio/studio.html', 'utf8')
-  .replace('<script src="./shaderBaker.js"></script>', '<script src="./catalog.js"></script>\n  <script src="./shaderBaker.js"></script>')
+  .replace('<script type="module" src="./studio.js"></script>', '<script src="./catalog.js"></script>\n  <script type="module" src="./studio.js"></script>')
   .replace(/>\s+</g, '><');
 fs.writeFileSync(path.join(outDir, 'studio_html.gz'), zlib.gzipSync(Buffer.from(studioHtml), { level: 9 }));
 
 const studioMap = [
   ['src/studio/studio.css', 'studio_css.gz', 'css'],
   ['src/studio/studio.js', 'studio_js.gz', 'js'],
-  ['src/studio/aimTrainer.js', 'studio_aim.gz', 'js'],
-  ['src/studio/shaderBaker.js', 'studio_baker.gz', 'js'],
-  ['node_modules/three/build/three.core.min.js', 'three_core.gz', 'raw'],
-  ['node_modules/three/build/three.module.min.js', 'three_mod.gz', 'raw'],
-  ['node_modules/three/examples/jsm/controls/OrbitControls.js', 'three_orbit.gz', 'js'],
-  ['node_modules/three/examples/jsm/loaders/GLTFLoader.js', 'three_gltf.gz', 'js'],
-  ['node_modules/three/examples/jsm/utils/BufferGeometryUtils.js', 'three_utils.gz', 'js'],
 ];
 
-function stripBlockCommentsSafe(src) {
-  let out = '', i = 0, n = src.length, q = '', esc = false;
-  while (i < n) {
-    const ch = src[i], nx = src[i + 1];
-    if (q) {
-      out += ch;
-      if (esc) esc = false;
-      else if (ch === '\\') esc = true;
-      else if (ch === q) q = '';
-      i++;
-      continue;
-    }
-    if (ch === '/' && nx === '*') {
-      i += 2;
-      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
-      i += 2;
-      out += ' ';
-      continue;
-    }
-    if (ch === '"' || ch === "'" || ch === '`') q = ch;
-    out += ch;
-    i++;
-  }
-  return out;
-}
 for (const [srcRel, outName, mode] of studioMap) {
   let raw = fs.readFileSync(srcRel);
-  if (outName.startsWith('three_') && mode === 'js') raw = Buffer.from(slimJs(stripBlockCommentsSafe(raw.toString('utf8'))));
-  else if (mode === 'js') raw = Buffer.from(slimJs(raw.toString('utf8')));
+  if (mode === 'js') raw = Buffer.from(slimJs(raw.toString('utf8')));
   else if (mode === 'css') raw = Buffer.from(slimCss(raw.toString('utf8')));
   fs.writeFileSync(path.join(outDir, outName), zlib.gzipSync(raw, { level: 9 }));
 }

@@ -55,9 +55,9 @@ async function testSyntax() {
   for (const file of jsFiles) {
     execFileSync(process.execPath, ["--check", file], { stdio: "pipe" });
   }
-  // Verify ESM studio.js parses as ES module cleanly in Chromium later and imports GLTFLoader + AimTrainer without Draco bloat
+  // Verify lightweight Studio keeps Corsair + RE Explorer active while 3D Studio & Aim Trainer stay Coming Soon
   const studioJs = fs.readFileSync(path.join(ROOT, "src", "studio", "studio.js"), "utf8");
-  assert(studioJs.includes("GLTFLoader") && studioJs.includes("initAimTrainer") && !studioJs.includes("DRACOLoader"));
+  assert(studioJs.includes("renderCorsairStatus") && studioJs.includes("renderExplorer") && !studioJs.includes("from \"three\"") && !studioJs.includes("initAimTrainer"));
   console.log(`[PASS] Syntax check across ${jsFiles.length} CommonJS/renderer/docs JS files`);
 }
 
@@ -350,22 +350,38 @@ async function testElectronLiveIntegration(tmpDir) {
         const hasFavStrip = Boolean(sr.querySelector('.dih-fav-strip'));
         const navBtns = Array.from(sr.querySelectorAll('.dih-nav-item'));
         let hasSubTabs = false;
+        let maxOverflowPx = 0;
         for (const b of navBtns) {
           b.click();
           if (sr.querySelector('.dih-subtabs')) hasSubTabs = true;
+          const body = sr.querySelector('.dih-cc .dih-stage-body');
+          if (body) maxOverflowPx = Math.max(maxOverflowPx, body.scrollWidth - body.clientWidth);
         }
         await new Promise(r => setTimeout(r, 80));
+        // Pane cache: revisiting a tab must reuse its laid-out pane, not rebuild it
+        navBtns[1].click();
+        const perfPane = sr.querySelector('.dih-pane:not(.off)');
+        navBtns[0].click();
+        navBtns[1].click();
+        const paneCached = perfPane === sr.querySelector('.dih-pane:not(.off)') && perfPane.isConnected;
+        // Closed panel stays mounted (visibility) so it reopens without re-layout
+        [...sr.querySelectorAll('.dih-cc .dih-stage-header .dih-btn')].find(b => b.textContent === 'ESC').click();
+        const closedMounted = ccBackdrop.classList.contains('dih-closed') && getComputedStyle(ccBackdrop).visibility === 'hidden' && sr.querySelectorAll('.dih-pane').length > 0;
+        pill.click();
         const navCount = navBtns.length;
         const catalog = await window.dih.getCatalog();
         const hw = await window.dih.getStaticHardware();
         const hwAnalysis = await window.dih.runHardwareAnalysis(false);
-        await window.dih.openStudio('painter');
+        await window.dih.openStudio('corsair');
         return {
+          paneCached,
+          closedMounted,
           hasNodeLeak,
           ccVisible,
           hasHeroCard,
           hasFavStrip,
           hasSubTabs,
+          maxOverflowPx,
           powerScore: hwAnalysis?.analysis?.powerScore || 0,
           navCount,
           featureCount: catalog.FEATURE_REGISTRY.length,
@@ -375,17 +391,20 @@ async function testElectronLiveIntegration(tmpDir) {
       })()`
     );
 
+    assert.strictEqual(gameCheck.paneCached, true, "Command Center tab pane was rebuilt instead of reused from cache");
+    assert.strictEqual(gameCheck.closedMounted, true, "Closed Command Center should stay mounted (visibility hidden) for instant reopen");
     assert.strictEqual(gameCheck.hasNodeLeak, false, "Node globals must never leak into Deadshot window");
     assert.strictEqual(gameCheck.ccVisible, true, "Command Center modal failed to open on pill click");
     assert.strictEqual(gameCheck.hasHeroCard, true, "Overview Hero PC Power card missing");
     assert.strictEqual(gameCheck.hasFavStrip, true, "Overview Pinned Favorites strip missing");
     assert.strictEqual(gameCheck.hasSubTabs, true, "Sub-tabs navigation missing inside dense tabs");
+    assert(gameCheck.maxOverflowPx <= 2, `Command Center horizontal overflow detected: ${gameCheck.maxOverflowPx}px`);
     assert(gameCheck.powerScore >= 10 && gameCheck.powerScore <= 100, "IPC runHardwareAnalysis failed");
     assert.strictEqual(gameCheck.navCount, 7, "Expected 7 navigation tabs in Command Center");
     assert(gameCheck.featureCount >= 190, `Feature count check failed in IPC: ${gameCheck.featureCount}`);
     assert(gameCheck.hz > 0, "Monitor Hz detection failed");
 
-    // Wait for Studio window target and verify Three.js + Canvas + Corsair + Explorer mounted cleanly
+    // Wait for Studio window target and verify Corsair + Explorer + Coming Soon views mounted cleanly
     let studioTarget = null;
     for (let attempt = 0; attempt < 25; attempt++) {
       await new Promise((r) => setTimeout(r, 300));
@@ -395,12 +414,12 @@ async function testElectronLiveIntegration(tmpDir) {
       if (studioTarget) {
         const studioReady = await cdpEval(
           studioTarget.webSocketDebuggerUrl,
-          "Boolean(document.querySelector('#virtualKbd .kbd-key') && document.querySelector('#glStage canvas'))"
+          "Boolean(document.querySelector('#virtualKbd .kbd-key') && document.querySelector('#explorerContent .exp-card'))"
         );
         if (studioReady) break;
       }
     }
-    assert(studioTarget, "Dih 3D Skin Studio window failed to launch");
+    assert(studioTarget, "Dih Studio window failed to launch");
 
     const studioCheck = await cdpEval(
       studioTarget.webSocketDebuggerUrl,
@@ -408,23 +427,22 @@ async function testElectronLiveIntegration(tmpDir) {
         const kbdKeys = document.querySelectorAll('#virtualKbd .kbd-key').length;
         const expCards = document.querySelectorAll('#explorerContent .exp-card').length;
         const explorerText = document.getElementById('explorerContent').textContent || '';
-        const hasThreeCanvas = Boolean(document.querySelector('#glStage canvas'));
-        document.getElementById('skinNameInput').value = 'CDP-Smoke-Skin';
-        document.getElementById('btnSaveSkin').click();
-        await new Promise(r => setTimeout(r, 300));
-        const vaultCount = document.querySelectorAll('#vaultList .vault-item').length;
-        return { kbdKeys, expCards, hasThreeCanvas, vaultCount, hasObjLeak: explorerText.includes('[object Object]') };
+        const corsairActive = Boolean(document.getElementById('view-corsair')?.classList.contains('active'));
+        const painterSoon = Boolean(document.querySelector('#view-painter .coming-soon-card'));
+        const aimSoon = Boolean(document.querySelector('#view-aimtrainer .coming-soon-card'));
+        return { kbdKeys, expCards, corsairActive, painterSoon, aimSoon, hasObjLeak: explorerText.includes('[object Object]') };
       })()`
     );
 
     assert.strictEqual(studioCheck.kbdKeys, 132, "Expected 6x22 Corsair K70 virtual key matrix");
     assert(studioCheck.expCards >= 5, "Deadshot RE Explorer missing asset cards");
     assert.strictEqual(studioCheck.hasObjLeak, false, "Found [object Object] rendering bug in RE Explorer");
-    assert.strictEqual(studioCheck.hasThreeCanvas, true, "Three.js WebGL canvas missing in Studio");
-    assert(studioCheck.vaultCount >= 1, "Studio .webp save -> Custom Vault UI failed");
+    assert.strictEqual(studioCheck.corsairActive, true, "Studio should open cleanly onto Corsair RGB tab");
+    assert.strictEqual(studioCheck.painterSoon, true, "3D Studio Coming Soon card missing");
+    assert.strictEqual(studioCheck.aimSoon, true, "Aim Trainer Coming Soon card missing");
 
     console.log(
-      `[PASS] Live Electron integration passed (0 leaks, CommandCenter=${gameCheck.ccVisible}, Studio ThreeJS+Canvas=${studioCheck.hasThreeCanvas}, Vault=${studioCheck.vaultCount}, CorsairKeys=${studioCheck.kbdKeys})`
+      `[PASS] Live Electron integration passed (0 leaks, 0 overflow, CommandCenter=${gameCheck.ccVisible}, CorsairKeys=${studioCheck.kbdKeys}, ComingSoon=true)`
     );
   } finally {
     try {
@@ -459,8 +477,8 @@ function testNativeDistribution(tmpDir) {
   const looseFiles = distEntries.filter((f) => /\.(js|html|css|json)$/i.test(f) || f === "studio" || f === "assets");
   assert.strictEqual(looseFiles.length, 0, `Expected zero loose source files in dist/Dih, found: ${looseFiles.join(", ")}`);
   assert.strictEqual(report.studioExists, true, "Studio HTML missing from embedded binary");
-  assert.strictEqual(report.threeJsExists, true, "Bundled Three.js missing from embedded binary");
-  assert.strictEqual(report.aimTrainerExists, true, "7-gun Aim Trainer missing from embedded binary");
+  assert.strictEqual(report.threeJsRemoved, true, "Three.js should be omitted while Coming Soon");
+  assert.strictEqual(report.aimTrainerRemoved, true, "7-gun Aim Trainer should be omitted while Coming Soon");
   assert.strictEqual(report.adblockBlockedTest, true, "Native adblocker failed test URL");
   assert.strictEqual(report.adblockVenatusTest, true, "Native adblocker failed Venatus URL");
   assert.strictEqual(report.adblockAtmtdTest, true, "Native adblocker failed Atmtd URL");

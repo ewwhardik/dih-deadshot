@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/ewwhardik/dih-deadshot.git"
   },
-  "description": "Dih v0.4 — Sub-1MB Native Deadshot.io Client & Cross-Platform Electron Suite with Zero-Ad Blocker, Minimal/Complete Telemetry, Auto-Chat, Omniverse 3D Skin Swapper & Per-Gun Aim Trainer",
+  "description": "Dih v0.4 — Sub-1MB Native Deadshot.io Client & Cross-Platform Electron Suite with Zero-Ad Blocker, Minimal/Complete Telemetry, Auto-Chat, 7-Gun .frag/.webp Skin Swapper & Corsair RGB (3D Studio & Aim Trainer Coming Soon)",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -57,6 +57,8 @@
       "!dist-electron/**",
       "!release-artifacts/**",
       "!scripts/**",
+      "!src/studio/vendor/**",
+      "!src/studio/aimTrainer.js",
       "!*.md"
     ],
     "directories": {

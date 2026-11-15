@@ -1,6 +1,6 @@
 /**
  * Dih Client Command Center Modal
- * Grey, premium, minimalist floating panel giving unified access to 146 features,
+ * Grey, premium, minimalist floating panel giving unified access to 201 features,
  * aligned SVG brand lockup, real telemetry controls, Aim/eDPI calculator, and Developer Credits.
  */
 
@@ -33,7 +33,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   const api = getHostApi();
   const isNative = Boolean(api?.isNativeHost);
 
-  const backdrop = el("div", { className: "dih-backdrop dih-cc-backdrop dih-hidden" });
+  const backdrop = el("div", { className: "dih-backdrop dih-cc-backdrop dih-closed" });
   const shell = el("div", { className: "dih-card dih-cc" });
 
   // Launcher pill shown subtly bottom-right when modal is closed — aligned icon + label
@@ -66,6 +66,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", "0 0 120 34");
+    svg.setAttribute("preserveAspectRatio", "none");
     svg.style.width = "100%";
     svg.style.height = "34px";
     svg.style.display = "block";
@@ -87,7 +88,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       `<stop offset="100%" stop-color="var(--dih-accent)" stop-opacity="0"/>` +
       `</linearGradient></defs>` +
       `<path d="${line} L120,34 L0,34 Z" fill="url(#${uid})"/>` +
-      `<path d="${line}" fill="none" stroke="var(--dih-accent)" stroke-width="1.8" stroke-linecap="round"/>`;
+      `<path d="${line}" fill="none" stroke="var(--dih-accent)" stroke-width="1.8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
     return svg;
   };
 
@@ -198,17 +199,29 @@ DIH_NS.createCommandCenter = function createCommandCenter({
 
   const railFoot = el("div", { className: "dih-rail-foot" }, [
     el("button", {
-      className: "dih-btn primary",
+      className: "dih-btn soon",
       style: { width: "100%" },
-      title: "3D Skin Studio (F7)",
-      onClick: () => api?.openStudio?.("painter"),
-    }, [makeIcon('<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/>', 13), el("span", { className: "dih-rail-foot-text" }, "3D Studio")]),
+      title: "3D Skin Studio — Coming Soon",
+      onClick: () => toast("3D Skin Studio — Coming Soon • Use 2D Shader Packs & .webp Swapper now"),
+    }, [
+      el("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } }, [
+        makeIcon('<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/>', 13),
+        el("span", { className: "dih-rail-foot-text" }, "3D Studio"),
+      ]),
+      el("span", { className: "dih-soon-badge" }, "Soon"),
+    ]),
     el("button", {
-      className: "dih-btn",
+      className: "dih-btn soon",
       style: { width: "100%" },
-      title: "7-Gun Aim Trainer (Ins)",
-      onClick: () => api?.openStudio?.("aimtrainer"),
-    }, [makeIcon('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>', 13), el("span", { className: "dih-rail-foot-text" }, "Aim Trainer")]),
+      title: "7-Gun Aim Trainer (Ins) — Coming Soon",
+      onClick: () => toast("7-Gun Aim Trainer — Coming Soon"),
+    }, [
+      el("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } }, [
+        makeIcon('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>', 13),
+        el("span", { className: "dih-rail-foot-text" }, "Aim Trainer"),
+      ]),
+      el("span", { className: "dih-soon-badge" }, "Soon"),
+    ]),
     el("div", {
       className: "dih-rail-foot-text",
       style: { fontSize: "10px", color: "var(--dih-muted)", textAlign: "center", marginTop: "2px" },
@@ -227,25 +240,38 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   const closeBtn = el("button", { className: "dih-btn", onClick: () => close() }, "ESC");
 
   const quickDock = el("div", { className: "dih-quick-dock" });
+  const quickDockBtns = [];
   function rebuildQuickDock() {
-    quickDock.innerHTML = "";
     const s = getSettings();
     const isMinimal = (s.hud?.telemetryViewMode || "complete") === "minimal";
     const items = [
-      { label: isMinimal ? "HUD: Minimal" : "HUD: Complete", active: isMinimal, click: () => updateSetting("hud.telemetryViewMode", isMinimal ? "complete" : "minimal") },
-      { label: "Crosshair", active: s.crosshair?.enabled, click: () => updateSetting("crosshair.enabled", !s.crosshair?.enabled) },
-      { label: "Skins", active: s.skins?.swapperEnabled, click: () => updateSetting("skins.swapperEnabled", !s.skins?.swapperEnabled) },
-      { label: "Night", active: s.visuals?.blueLightShield, click: () => updateSetting("visuals.blueLightShield", !s.visuals?.blueLightShield) },
+      { label: isMinimal ? "HUD: Min" : "HUD: Full", active: isMinimal, getClick: () => { const curMin = (getSettings().hud?.telemetryViewMode || "complete") === "minimal"; return () => updateSetting("hud.telemetryViewMode", curMin ? "complete" : "minimal"); } },
+      { label: "Crosshair", active: Boolean(s.crosshair?.enabled), getClick: () => () => updateSetting("crosshair.enabled", !getSettings().crosshair?.enabled) },
+      { label: "Skins", active: Boolean(s.skins?.swapperEnabled), getClick: () => () => updateSetting("skins.swapperEnabled", !getSettings().skins?.swapperEnabled) },
+      { label: "Night", active: Boolean(s.visuals?.blueLightShield), getClick: () => () => updateSetting("visuals.blueLightShield", !getSettings().visuals?.blueLightShield) },
     ];
-    for (const item of items) {
-      quickDock.appendChild(
-        el("button", {
-          className: `dih-btn${item.active ? " active" : ""}`,
-          style: { padding: "5px 10px", fontSize: "11px" },
-          onClick: item.click,
-        }, item.label)
-      );
+    if (!quickDockBtns.length) {
+      for (let i = 0; i < items.length; i++) {
+        const idx = i;
+        const btn = el("button", {
+          className: `dih-btn${items[idx].active ? " active" : ""}`,
+          style: { padding: "5px 9px", fontSize: "11px" },
+          onClick: () => items[idx].getClick()(),
+        }, items[idx].label);
+        quickDockBtns.push(btn);
+        quickDock.appendChild(btn);
+      }
+      // Rebind click handlers dynamically via getSettings()
+      quickDockBtns[0].onclick = () => { const curMin = (getSettings().hud?.telemetryViewMode || "complete") === "minimal"; updateSetting("hud.telemetryViewMode", curMin ? "complete" : "minimal"); };
+      quickDockBtns[1].onclick = () => updateSetting("crosshair.enabled", !getSettings().crosshair?.enabled);
+      quickDockBtns[2].onclick = () => updateSetting("skins.swapperEnabled", !getSettings().skins?.swapperEnabled);
+      quickDockBtns[3].onclick = () => updateSetting("visuals.blueLightShield", !getSettings().visuals?.blueLightShield);
+      return;
     }
+    items.forEach((item, i) => {
+      quickDockBtns[i].textContent = item.label;
+      quickDockBtns[i].classList.toggle("active", Boolean(item.active));
+    });
   }
 
   const searchPill = el("div", { className: "dih-search-pill" }, [
@@ -292,15 +318,64 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   shadowRoot.appendChild(backdrop);
 
   // --- Helpers ---
+  let boundSyncers = [];
+  let dynamicHostUpdater = null;
+
   function getPath(obj, dotPath) {
     return String(dotPath || "").split(".").reduce((acc, k) => (acc ? acc[k] : undefined), obj);
   }
 
+  function cloneAndSetPath(obj, dotPath, value) {
+    const root = obj ? { ...obj } : {};
+    const parts = String(dotPath || "").split(".");
+    let cur = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const k = parts[i];
+      cur[k] = cur[k] && typeof cur[k] === "object" ? (Array.isArray(cur[k]) ? [...cur[k]] : { ...cur[k] }) : {};
+      cur = cur[k];
+    }
+    cur[parts[parts.length - 1]] = value;
+    return root;
+  }
+
+  function bindSync(fn) {
+    boundSyncers.push(fn);
+    fn(getSettings());
+  }
+
+  // Bumped on every settings change; a cached pane built/synced at an older rev is rebuilt on show.
+  let settingsRev = 0;
+  const panes = new Map();
+  let activePane = null;
+  let paneEl = null;
+
+  function syncUiFromSettings() {
+    const s = getSettings();
+    shell.classList.toggle("compact", s.theme?.density === "compact");
+    shell.classList.toggle("compact-rail", Boolean(s.esportsHud?.compactNavRail));
+    rebuildQuickDock();
+    for (const fn of boundSyncers) {
+      try {
+        fn(s);
+      } catch {}
+    }
+    if (activePane) activePane.rev = settingsRev;
+  }
+
   async function updateSetting(dotPath, value) {
+    setSettingsLocal(cloneAndSetPath(getSettings(), dotPath, value));
+    const needsRebuild =
+      dotPath.startsWith("skins.weapons.") ||
+      dotPath === "esportsHud.pinnedFeatureIds" ||
+      (activeTab === "overview" && activeOverviewFilter === "enabled");
+
+    if (needsRebuild) renderStage();
+    // Optimistic local refresh (also re-syncs this panel). The host echoes the saved
+    // settings back via onSettingsChanged, which runs the one follow-up refresh.
+    onRefreshAll();
+
     const updated = await api?.setSetting?.(dotPath, value);
     if (updated) setSettingsLocal(updated);
-    onRefreshAll();
-    renderStage();
   }
 
   async function triggerAction(actionId) {
@@ -341,7 +416,14 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       toast("Use B in-game or click the Stopwatch widget Reset button");
     } else if (actionId.startsWith("openStudio:")) {
       const parts = actionId.split(":");
-      await api?.openStudio?.(parts[1] || "painter", parts[2] || "");
+      const tab = parts[1] || "corsair";
+      if (tab === "painter") {
+        toast("3D Skin Studio — Coming Soon • Use 7-Gun Shader Packs & .webp Swapper");
+      } else if (tab === "aimtrainer") {
+        toast("7-Gun Aim Trainer — Coming Soon");
+      } else {
+        await api?.openStudio?.(tab, parts[2] || "");
+      }
     } else if (actionId === "rescanSwapFiles") {
       const list = await api?.rescanSwapFiles?.();
       toast(`Rescanned swap folder (${Array.isArray(list) ? list.length : 0} local overrides indexed)`);
@@ -435,15 +517,15 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       if (res?.ok) toast(`Exported diagnostics: ${res.filePath}`);
     }
     onRefreshAll();
-    renderStage();
+    renderStage({ preserveScroll: true, animate: false });
   }
 
   function makeToggleCard(title, desc, dotPath) {
-    const val = Boolean(getPath(getSettings(), dotPath));
     const sw = el("div", {
-      className: `dih-switch${val ? " on" : ""}`,
-      onClick: () => updateSetting(dotPath, !val),
+      className: "dih-switch",
+      onClick: () => updateSetting(dotPath, !Boolean(getPath(getSettings(), dotPath))),
     });
+    bindSync((s) => sw.classList.toggle("on", Boolean(getPath(s, dotPath))));
     return el("div", { className: "dih-panel dih-row" }, [
       el("div", {}, [
         el("div", { className: "dih-row-title" }, title),
@@ -453,13 +535,25 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     ]);
   }
 
-  function makeSelectCard(title, desc, dotPath, options, asNumber = false) {
-    const val = getPath(getSettings(), dotPath);
+  function makeSelectCard(title, desc, dotPath, options, asNumber = false, stacked = false) {
     const sel = el("select", { className: "dih-select" }, options.map((o) =>
-      el("option", { value: o.value, selected: String(val) === String(o.value) ? "selected" : null }, o.label)
+      el("option", { value: o.value }, o.label)
     ));
-    sel.value = String(val ?? "");
     sel.addEventListener("change", () => updateSetting(dotPath, asNumber ? Number(sel.value) : sel.value));
+    bindSync((s) => {
+      if (document.activeElement !== sel) {
+        sel.value = String(getPath(s, dotPath) ?? "");
+      }
+    });
+    if (stacked) {
+      return el("div", { className: "dih-panel dih-row-col" }, [
+        el("div", {}, [
+          el("div", { className: "dih-row-title" }, title),
+          desc ? el("div", { className: "dih-row-desc" }, desc) : null,
+        ]),
+        sel,
+      ]);
+    }
     return el("div", { className: "dih-panel dih-row" }, [
       el("div", {}, [el("div", { className: "dih-row-title" }, title), desc ? el("div", { className: "dih-row-desc" }, desc) : null]),
       sel,
@@ -467,37 +561,49 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function makeSliderCard(title, dotPath, min, max, step = 1, unit = "") {
-    const val = Number(getPath(getSettings(), dotPath) ?? min);
-    const readout = el("span", { className: "dih-mono dih-badge" }, `${val}${unit}`);
+    const readout = el("span", { className: "dih-mono dih-badge" }, `${min}${unit}`);
     const range = el("input", {
       type: "range",
       className: "dih-range",
       min: String(min),
       max: String(max),
       step: String(step),
-      value: String(val),
+      value: String(min),
     });
     range.addEventListener("input", () => {
       readout.textContent = `${range.value}${unit}`;
     });
     range.addEventListener("change", () => updateSetting(dotPath, Number(range.value)));
+    bindSync((s) => {
+      const val = Number(getPath(s, dotPath) ?? min);
+      readout.textContent = `${val}${unit}`;
+      if (document.activeElement !== range) {
+        range.value = String(val);
+      }
+    });
     return el("div", { className: "dih-panel dih-row" }, [
       el("div", {}, [el("div", { className: "dih-row-title" }, title)]),
-      el("div", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [readout, range]),
+      el("div", { style: { display: "flex", alignItems: "center", gap: "8px", flexShrink: "0" } }, [readout, range]),
     ]);
   }
 
   function makeColorCard(title, dotPath) {
-    const val = getPath(getSettings(), dotPath) || "#d4d8df";
-    const hex = el("span", { className: "dih-mono", style: { fontSize: "11px", color: "var(--dih-muted)" } }, val);
-    const picker = el("input", { type: "color", className: "dih-color", value: String(val).slice(0, 7) });
+    const hex = el("span", { className: "dih-mono", style: { fontSize: "11px", color: "var(--dih-muted)" } }, "#d4d8df");
+    const picker = el("input", { type: "color", className: "dih-color", value: "#d4d8df" });
     picker.addEventListener("change", () => {
       hex.textContent = picker.value;
       updateSetting(dotPath, picker.value);
     });
+    bindSync((s) => {
+      const val = getPath(s, dotPath) || "#d4d8df";
+      hex.textContent = val;
+      if (document.activeElement !== picker) {
+        picker.value = String(val).slice(0, 7);
+      }
+    });
     return el("div", { className: "dih-panel dih-row" }, [
       el("div", { className: "dih-row-title" }, title),
-      el("div", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [hex, picker]),
+      el("div", { style: { display: "flex", alignItems: "center", gap: "8px", flexShrink: "0" } }, [hex, picker]),
     ]);
   }
 
@@ -508,7 +614,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
           className: `dih-subtab${currentId === it.id ? " active" : ""}`,
           onClick: () => {
             onPick(it.id);
-            renderStage();
+            renderStage({ preserveScroll: false, animate: false });
           },
         }, it.label)
       )
@@ -527,12 +633,12 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   function buildCreditsCard() {
     return el("div", { className: "dih-panel" }, [
       el("div", { className: "dih-row" }, [
-        el("div", { style: { display: "flex", alignItems: "center", gap: "12px" } }, [
+        el("div", { style: { display: "flex", alignItems: "center", gap: "12px", minWidth: "0" } }, [
           el("div", { className: "dih-logo-mark" }, [makeBrandSvg(22)]),
-          el("div", {}, [
-            el("div", { className: "dih-row-title" }, "Dih Client v0.4 — Application Overview & Developer Credits"),
+          el("div", { style: { minWidth: "0" } }, [
+            el("div", { className: "dih-row-title" }, "Dih Client v0.4 — Overview & Credits"),
             el("div", { className: "dih-row-desc" },
-              `High-FPS (${isNative ? "Native Rust + Win32 + WebView2 Single-Binary <1 MB EXE" : "Electron Cross-Platform"}) minimalist Deadshot.io client featuring zero-leak Venatus/Prebid adblocking, O(1) Omniverse-style skin swaps & equipped overrides, Minimal & Complete telemetry, F1–F9 HUD hide shortcuts, Auto-Join chat, 7-gun Aim Trainer, Corsair RGB, and ${catalog.FEATURE_REGISTRY?.length || 196} live controls.`
+              `High-FPS (${isNative ? "Native Rust + Win32 + WebView2 Single-Binary <1 MB EXE" : "Electron Cross-Platform"}) minimalist Deadshot.io client with zero-leak adblocking, O(1) .webp skin swaps & shader packs, Minimal/Complete telemetry, F1–F9 HUD shortcuts, Auto-Join chat, Corsair RGB (3D Studio & Aim Trainer Coming Soon), and ${catalog.FEATURE_REGISTRY?.length || 196} controls.`
             ),
             el("div", { className: "dih-row-desc dih-mono", style: { marginTop: "4px", color: "var(--dih-accent)" } },
               "Developer: ewwhardik • GitHub: github.com/ewwhardik/dih-deadshot • Discord: ewwhardik"
@@ -566,9 +672,9 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const m = telemetryHud?.getCurrentMetrics?.() || {};
     const primary = staticHw?.displays?.primary;
 
-    stageTitle.textContent = query ? `Results for "${searchInput.value.trim()}"` : "Dashboard";
+    stageTitle.textContent = query ? `Search: "${searchInput.value.trim()}"` : "Dashboard";
     stageSub.textContent = query
-      ? "Instant live toggles matching your query"
+      ? "Live controls matching your filter"
       : `${primary?.displayFrequency || 60}Hz • ${staticHw?.gpu?.primaryName || "GPU Ready"}`;
 
     const s = getSettings();
@@ -578,11 +684,35 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     if (!query) {
       const autoTune = s.autoTune || {};
       const powerScore = Number(autoTune.lastScore) || 78;
-      const tierText = String(autoTune.recommendedTier || "esports_desktop").replace(/_/g, " ").toUpperCase();
+      const tierMap = {
+        extreme_rig: "MAX RIG",
+        esports_desktop: "ESPORTS",
+        ultra_potato: "LOW-END",
+        balanced: "BALANCED",
+      };
+      const tierText = tierMap[autoTune.recommendedTier] || (powerScore >= 85 ? "MAX RIG" : powerScore >= 65 ? "ESPORTS" : "BALANCED");
       const activeMode = s.performance?.presetMode || "max_compute";
       const curFps = m.fps || (primary?.displayFrequency || 144);
-      const hostMb = liveSnapshot?.hostMemoryMb != null ? `${Number(liveSnapshot.hostMemoryMb).toFixed(1)} MB` : "1.7 MB";
-      const pingMs = liveSnapshot?.network?.rttMs ? `${Math.round(liveSnapshot.network.rttMs)} ms` : "14 ms";
+      const hostMb = liveSnapshot?.hostMemoryMb != null ? `${Number(liveSnapshot.hostMemoryMb).toFixed(1)} MB` : "-- MB";
+      const pingMs = liveSnapshot?.network?.rttMs ? `${Math.round(liveSnapshot.network.rttMs)} ms` : "-- ms";
+
+      const fpsValEl = el("div", { className: "dih-kpi-val" }, `${curFps} FPS`);
+      const fpsSubEl = el("div", { className: "dih-kpi-sub" }, `${primary?.displayFrequency || 60}Hz Sync • 1% Low ${m.low1Fps || "--"}`);
+      const hostValEl = el("div", { className: "dih-kpi-val" }, hostMb);
+      const pingValEl = el("div", { className: "dih-kpi-val" }, pingMs);
+
+      dynamicHostUpdater = () => {
+        const curM = telemetryHud?.getCurrentMetrics?.() || {};
+        const nextFps = curM.fps || (primary?.displayFrequency || 144);
+        fpsValEl.textContent = `${nextFps} FPS`;
+        fpsSubEl.textContent = `${primary?.displayFrequency || 60}Hz Sync • 1% Low ${curM.low1Fps || "--"}`;
+        if (liveSnapshot?.hostMemoryMb != null) {
+          hostValEl.textContent = `${Number(liveSnapshot.hostMemoryMb).toFixed(1)} MB`;
+        }
+        if (liveSnapshot?.network?.rttMs) {
+          pingValEl.textContent = `${Math.round(liveSnapshot.network.rttMs)} ms`;
+        }
+      };
 
       // Row 1: 4 Visual Bento KPI Cards (Sparklines, Bars & Gauge)
       const kpiRow = el("div", { className: "dih-grid-4" }, [
@@ -591,16 +721,16 @@ DIH_NS.createCommandCenter = function createCommandCenter({
             el("span", { className: "dih-tel-k" }, "FRAME RATE"),
             el("span", { className: "dih-kpi-icon" }, [makeIcon('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', 13)]),
           ]),
-          el("div", { className: "dih-kpi-val" }, `${curFps} FPS`),
+          fpsValEl,
           makeSparkSvg([0.78, 0.85, 0.82, 0.91, 0.94, 0.89, 0.97, 1].map((x) => curFps * x), "dihG1"),
-          el("div", { className: "dih-kpi-sub" }, `${primary?.displayFrequency || 60}Hz Sync • 1% Low ${m.low1Fps || "--"}`),
+          fpsSubEl,
         ]),
         el("div", { className: "dih-kpi-card" }, [
           el("div", { className: "dih-kpi-top" }, [
             el("span", { className: "dih-tel-k" }, "HOST SHELL"),
             el("span", { className: "dih-kpi-icon" }, [makeIcon('<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/>', 13)]),
           ]),
-          el("div", { className: "dih-kpi-val" }, hostMb),
+          hostValEl,
           makeBarSparkSvg([96, 84, 72, 58, 42, 26, 14, 10]),
           el("div", { className: "dih-kpi-sub" }, isNative ? "Rust + Win32 Zero Bloat" : "Minimal Electron Shell"),
         ]),
@@ -609,7 +739,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
             el("span", { className: "dih-tel-k" }, "LATENCY"),
             el("span", { className: "dih-kpi-icon" }, [makeIcon('<path d="M5 12.55a11 11 0 0 1 14 0"/><path d="M8.5 16.05a6 6 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>', 13)]),
           ]),
-          el("div", { className: "dih-kpi-val" }, pingMs),
+          pingValEl,
           makeSparkSvg([24, 19, 21, 16, 17, 14, 15, 13], "dihG2"),
           el("div", { className: "dih-kpi-sub" }, "DoH + QUIC Enabled"),
         ]),
@@ -618,15 +748,15 @@ DIH_NS.createCommandCenter = function createCommandCenter({
             el("span", { className: "dih-tel-k" }, "POWER INDEX"),
             el("span", { className: "dih-badge dih-mono" }, activeMode === "max_compute" ? "MAX" : activeMode === "low_end" ? "ECO" : "BAL"),
           ]),
-          el("div", { style: { display: "flex", alignItems: "center", gap: "12px", marginTop: "2px" } }, [
-            el("div", { className: "dih-score-ring" }, [
+          el("div", { style: { display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", minWidth: "0" } }, [
+            el("div", { className: "dih-score-ring", style: { flexShrink: "0" } }, [
               makeRingSvg(powerScore),
               el("span", { className: "dih-mono", style: { fontSize: "19px", fontWeight: "700", lineHeight: "1" } }, String(powerScore)),
               el("span", { className: "dih-mono", style: { fontSize: "8px", color: "var(--dih-muted)" } }, "/100"),
             ]),
-            el("div", { style: { minWidth: "0" } }, [
+            el("div", { style: { flex: "1 1 0%", minWidth: "0" } }, [
               el("div", { className: "dih-row-title", style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, tierText),
-              el("div", { className: "dih-kpi-sub", style: { marginTop: "4px" } }, `${staticHw?.memory?.totalGb || 16} GB RAM`),
+              el("div", { className: "dih-kpi-sub", style: { marginTop: "3px" } }, `${staticHw?.memory?.totalGb || 16} GB RAM`),
               el("button", { className: "dih-btn", style: { marginTop: "6px", padding: "3px 9px", fontSize: "10.5px" }, onClick: () => triggerAction("runHardwareAnalysis") }, "Re-Scan"),
             ]),
           ]),
@@ -639,23 +769,26 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       const ramPct = Math.min(100, Math.max(25, ((staticHw?.memory?.totalGb || 16) / 32) * 100));
       const hzPct = Math.min(100, Math.max(25, ((primary?.displayFrequency || 60) / 240) * 100));
 
-      const hwCard = el("div", { className: "dih-hero-hw", style: { flexDirection: "column", alignItems: "stretch", gap: "12px" } }, [
-        el("div", { className: "dih-row" }, [
-          el("div", {}, [
-            el("div", { className: "dih-row-title" }, "Compute Profile & Rig Bars"),
-            el("div", { className: "dih-kpi-sub" }, autoTune.detectedSummary || `${staticHw?.cpu?.model || "CPU"} • ${staticHw?.gpu?.primaryName || "GPU"}`),
+      const modeTabBtns = {};
+      const hwCard = el("div", { className: "dih-hero-hw", style: { flexDirection: "column", alignItems: "stretch", justifyContent: "space-between", gap: "16px", minWidth: "0" } }, [
+        el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", minWidth: "0" } }, [
+          el("div", { style: { flex: "1 1 0%", minWidth: "0" } }, [
+            el("div", { className: "dih-row-title" }, "Compute Profile"),
+            el("div", { className: "dih-kpi-sub", style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, autoTune.detectedSummary || `${staticHw?.cpu?.model || "CPU"} • ${staticHw?.gpu?.primaryName || "GPU"}`),
           ]),
           el("div", { className: "dih-subtabs" }, [
             { id: "max_compute", label: "Max" },
             { id: "balanced", label: "Balanced" },
             { id: "low_end", label: "Low-End" },
-          ].map((p) =>
-            el("button", {
+          ].map((p) => {
+            const btn = el("button", {
               className: `dih-subtab${activeMode === p.id ? " active" : ""}`,
-              style: { padding: "4px 10px", fontSize: "11px" },
+              style: { padding: "4px 9px", fontSize: "10.5px" },
               onClick: () => triggerAction(`applyPerfPreset:${p.id}`),
-            }, p.label)
-          )),
+            }, p.label);
+            modeTabBtns[p.id] = btn;
+            return btn;
+          })),
         ]),
         el("div", { className: "dih-hw-bars" }, [
           { lbl: "CPU", val: `${staticHw?.cpu?.physicalCores || 6}C`, pct: cpuPct },
@@ -664,36 +797,44 @@ DIH_NS.createCommandCenter = function createCommandCenter({
           { lbl: "REFRESH", val: `${primary?.displayFrequency || 60}Hz`, pct: hzPct },
         ].map((b) =>
           el("div", { className: "dih-hw-bar-col" }, [
-            el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "10.5px" } }, [
-              el("span", { style: { color: "var(--dih-muted)" } }, b.lbl),
-              el("span", { className: "dih-mono" }, b.val),
+            el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, [
+              el("span", { className: "dih-tel-k" }, b.lbl),
+              el("span", { className: "dih-mono", style: { fontSize: "13px", fontWeight: "700" } }, b.val),
             ]),
             el("div", { className: "dih-hw-track" }, [el("div", { className: "dih-hw-fill", style: { width: `${Math.round(b.pct)}%` } })]),
           ])
         )),
       ]);
+      bindSync((curS) => {
+        const modeNow = curS.performance?.presetMode || "max_compute";
+        for (const [id, b] of Object.entries(modeTabBtns)) {
+          b.classList.toggle("active", modeNow === id);
+        }
+      });
 
       const matrixTiles = [
-        { label: "Crosshair", on: s.crosshair?.enabled, icon: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>', click: () => updateSetting("crosshair.enabled", !s.crosshair?.enabled) },
-        { label: "Adblocker", on: s.window?.adblockerEnabled !== false, icon: '<path d="M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z"/>', click: () => updateSetting("window.adblockerEnabled", !(s.window?.adblockerEnabled !== false)) },
-        { label: "Skin Swap", on: s.skins?.swapperEnabled, icon: '<polygon points="12 2 19 21 12 17 5 21 12 2"/>', click: () => updateSetting("skins.swapperEnabled", !s.skins?.swapperEnabled) },
-        { label: "Telemetry", on: s.hud?.statsEnabled, icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', click: () => updateSetting("hud.statsEnabled", !s.hud?.statsEnabled) },
-        { label: "Auto Chat", on: s.esportsHud?.autoJoinMessageEnabled, icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', click: () => updateSetting("esportsHud.autoJoinMessageEnabled", !s.esportsHud?.autoJoinMessageEnabled) },
-        { label: "Royal Pack", on: false, icon: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7l4 5-4 5-4-5z"/>', click: () => switchTab("skins") },
+        { label: "Crosshair", isOn: (cs) => Boolean(cs.crosshair?.enabled), icon: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>', click: () => updateSetting("crosshair.enabled", !getSettings().crosshair?.enabled) },
+        { label: "Adblocker", isOn: (cs) => cs.window?.adblockerEnabled !== false, icon: '<path d="M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z"/>', click: () => updateSetting("window.adblockerEnabled", !(getSettings().window?.adblockerEnabled !== false)) },
+        { label: "Skin Swap", isOn: (cs) => Boolean(cs.skins?.swapperEnabled), icon: '<polygon points="12 2 19 21 12 17 5 21 12 2"/>', click: () => updateSetting("skins.swapperEnabled", !getSettings().skins?.swapperEnabled) },
+        { label: "Telemetry", isOn: (cs) => Boolean(cs.hud?.statsEnabled), icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', click: () => updateSetting("hud.statsEnabled", !getSettings().hud?.statsEnabled) },
+        { label: "Auto Chat", isOn: (cs) => Boolean(cs.autoChat?.enabled), icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', click: () => updateSetting("autoChat.enabled", !getSettings().autoChat?.enabled) },
+        { label: "Royal Pack", isOn: () => false, icon: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 7l4 5-4 5-4-5z"/>', click: () => switchTab("skins") },
       ];
 
-      const matrixCard = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "8px" } }, [
+      const matrixCard = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "8px", minWidth: "0" } }, [
         el("div", { className: "dih-row" }, [
-          el("span", { className: "dih-row-title" }, "Quick Visual Toggles"),
-          el("button", { className: "dih-btn", style: { padding: "3px 9px", fontSize: "10.5px" }, onClick: () => triggerAction("copyLobbyInvite") }, "Copy Invite"),
+          el("span", { className: "dih-row-title" }, "Quick Toggles"),
+          el("button", { className: "dih-btn", style: { padding: "3px 9px", fontSize: "10.5px", flexShrink: "0" }, onClick: () => triggerAction("copyLobbyInvite") }, "Invite"),
         ]),
         el("div", { className: "dih-tile-matrix" },
-          matrixTiles.map((t) =>
-            el("button", { className: `dih-tile-btn${t.on ? " on" : ""}`, onClick: t.click }, [
-              makeIcon(t.icon, 16),
-              el("span", {}, t.label),
-            ])
-          )
+          matrixTiles.map((t) => {
+            const btn = el("button", { className: `dih-tile-btn${t.isOn(s) ? " on" : ""}`, onClick: t.click }, [
+              makeIcon(t.icon, 15),
+              el("span", { style: { overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" } }, t.label),
+            ]);
+            bindSync((curS) => btn.classList.toggle("on", t.isOn(curS)));
+            return btn;
+          })
         ),
       ]);
 
@@ -703,31 +844,38 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       const favStrip = el("div", { className: "dih-fav-strip" },
         pinnedFeats.length
           ? pinnedFeats.map((pf) => {
-              const isOn = pf.settingPath ? Boolean(getPath(s, pf.settingPath)) : false;
-              return el("button", {
-                className: `dih-btn${isOn ? " primary" : ""}`,
+              const btn = el("button", {
+                className: "dih-btn dih-fav-btn",
                 style: { padding: "4px 10px", fontSize: "11px" },
-                onClick: () => (pf.actionId ? triggerAction(pf.actionId) : updateSetting(pf.settingPath, !isOn)),
-              }, `★ ${pf.title.replace(/\s*\(.*?\)\s*/g, "").slice(0, 24)}`);
+                title: pf.title,
+                onClick: () => {
+                  const curOn = pf.settingPath ? Boolean(getPath(getSettings(), pf.settingPath)) : false;
+                  return pf.actionId ? triggerAction(pf.actionId) : updateSetting(pf.settingPath, !curOn);
+                },
+              }, `★ ${pf.title.replace(/\s*\(.*?\)\s*/g, "")}`);
+              if (pf.settingPath) {
+                bindSync((curS) => btn.classList.toggle("primary", Boolean(getPath(curS, pf.settingPath))));
+              }
+              return btn;
             })
           : [el("span", { className: "dih-badge" }, "Tip: Click ★ on any module below to pin here")]
       );
 
       const categories = ["all", ...new Set((catalog.FEATURE_REGISTRY || []).map((f) => f.category))];
-      const chipRow = el("div", { className: "dih-chip-row" },
+      const chipRow = el("div", { className: "dih-chip-row dih-chip-scroll" },
         categories.map((cat) =>
           el("button", {
             className: `dih-chip${activeCategory === cat ? " active" : ""}`,
             onClick: () => {
               activeCategory = cat;
               showAllOverview = cat !== "all";
-              renderStage();
+              renderStage({ preserveScroll: false, animate: false });
             },
           }, cat.toUpperCase())
         )
       );
 
-      const stateChips = el("div", { className: "dih-chip-row" },
+      const stateChips = el("div", { className: "dih-subtabs" },
         [
           { id: "all", label: showAllOverview ? `All (${catalog.FEATURE_REGISTRY.length})` : "Featured (4)" },
           { id: "enabled", label: "Active On" },
@@ -735,24 +883,23 @@ DIH_NS.createCommandCenter = function createCommandCenter({
           { id: "restart", label: "Boot Flags" },
         ].map((fc) =>
           el("button", {
-            className: `dih-chip${activeOverviewFilter === fc.id ? " active" : ""}`,
+            className: `dih-subtab${activeOverviewFilter === fc.id ? " active" : ""}`,
             onClick: () => {
               if (fc.id === "all") showAllOverview = activeOverviewFilter === "all" ? !showAllOverview : false;
               activeOverviewFilter = fc.id;
-              renderStage();
+              renderStage({ preserveScroll: false, animate: false });
             },
           }, fc.label)
         )
       );
 
-      stageBody.append(
+      paneEl.append(
         kpiRow,
         bentoRow,
+        el("div", { className: "dih-section-title" }, "Pinned"),
         favStrip,
-        el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, [
-          chipRow,
-          stateChips,
-        ])
+        el("div", { className: "dih-section-title" }, "Feature Library"),
+        el("div", { className: "dih-filter-bar" }, [chipRow, stateChips])
       );
     }
 
@@ -780,7 +927,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     }
 
     if (!filtered.length) {
-      stageBody.appendChild(el("div", { className: "dih-panel" }, "No features matched that filter."));
+      paneEl.appendChild(el("div", { className: "dih-panel" }, "No features matched that filter."));
       return;
     }
 
@@ -788,11 +935,12 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     for (const feat of filtered) {
       let ctrl;
       if (feat.controlType === "toggle" && feat.settingPath) {
-        const cur = Boolean(getPath(getSettings(), feat.settingPath));
+        const path = feat.settingPath;
         ctrl = el("div", {
-          className: `dih-switch${cur ? " on" : ""}`,
-          onClick: () => updateSetting(feat.settingPath, !cur),
+          className: "dih-switch",
+          onClick: () => updateSetting(path, !Boolean(getPath(getSettings(), path))),
         });
+        bindSync((curS) => ctrl.classList.toggle("on", Boolean(getPath(curS, path))));
       } else if (feat.actionId) {
         ctrl = el("button", { className: "dih-btn", onClick: () => triggerAction(feat.actionId) }, "Run");
       } else if (feat.settingPath) {
@@ -842,13 +990,13 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         ])
       );
     }
-    stageBody.appendChild(listGrid);
+    paneEl.appendChild(listGrid);
     if (isDefaultSlice) {
-      stageBody.appendChild(
+      paneEl.appendChild(
         el("div", { style: { display: "flex", justifyContent: "center" } }, [
           el("button", {
             className: "dih-btn",
-            onClick: () => { showAllOverview = true; renderStage(); },
+            onClick: () => { showAllOverview = true; renderStage({ preserveScroll: true, animate: false }); },
           }, `Show All ${catalog.FEATURE_REGISTRY.length} Controls ↓`),
         ])
       );
@@ -856,8 +1004,8 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function renderMetricsAndPerf() {
-    stageTitle.textContent = "Compute, RAM & Network";
-    stageSub.textContent = "Hardware profile • 10–15 MB host target • Low-latency tuning";
+    stageTitle.textContent = "Performance";
+    stageSub.textContent = "Compute tiers, RAM budget & network flags";
 
     const s = getSettings();
     const perf = s.performance || {};
@@ -1074,9 +1222,9 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       (id) => { activeMetricsSub = id; }
     );
 
-    stageBody.append(subBar);
+    paneEl.append(subBar);
     if (activeMetricsSub === "profiles") {
-      stageBody.append(
+      paneEl.append(
         hwCard,
         el("div", { className: "dih-section-title" }, "COMPUTE & DEVICE PROFILES"),
         modeGrid,
@@ -1085,18 +1233,18 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         ramControlsGrid
       );
     } else if (activeMetricsSub === "engine") {
-      stageBody.append(
+      paneEl.append(
         el("div", { className: "dih-section-title" }, "NATIVE ENGINE, WIN32 & WEBGL2 OPTIMIZATIONS"),
         perfGrid
       );
     } else if (activeMetricsSub === "network") {
-      stageBody.append(
+      paneEl.append(
         el("div", { className: "dih-section-title" }, "NETWORK LATENCY, QUIC & DOH DNS OPTIMIZER"),
         networkHostBar,
         networkGrid
       );
     } else {
-      stageBody.append(
+      paneEl.append(
         el("div", { className: "dih-section-title" }, "TELEMETRY & ESPORTS HUD WIDGETS"),
         hudGrid
       );
@@ -1104,19 +1252,29 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function renderSkins() {
-    stageTitle.textContent = "Skin Packs & Studio";
-    stageSub.textContent = "Shader packs • Custom .webp swaps • 3D editor";
+    stageTitle.textContent = "Skin Packs";
+    stageSub.textContent = "Royal Flush shader baker • .webp swaps";
 
     const s = getSettings();
     const topBar = el("div", { className: "dih-grid-2" }, [
       makeToggleCard("Master Client-Side Skin Swapper", "Intercepts Deadshot weapon & UI textures before load", "skins.swapperEnabled"),
-      el("div", { className: "dih-panel dih-row" }, [
-        el("div", {}, [
-          el("div", { className: "dih-row-title" }, "3D Gun Skin Creator & Batch Loadout"),
-          el("div", { className: "dih-row-desc" }, `${customSkinsCache.length} custom Studio skin(s) saved`),
+      el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "8px" } }, [
+        el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" } }, [
+          el("div", { style: { minWidth: "0" } }, [
+            el("div", { className: "dih-row-title" }, "Loadout & 3D Studio"),
+            el("div", { className: "dih-row-desc" }, `${customSkinsCache.length} Vault skin(s) saved`),
+          ]),
+          el("button", {
+            className: "dih-btn soon",
+            style: { gap: "6px" },
+            title: "3D Skin Studio — Coming Soon",
+            onClick: () => toast("3D Skin Studio — Coming Soon • Use 7-Gun Shader Packs below"),
+          }, [
+            el("span", {}, "3D Studio"),
+            el("span", { className: "dih-soon-badge" }, "Soon"),
+          ]),
         ]),
         el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
-          el("button", { className: "dih-btn primary", onClick: () => api?.openStudio?.("painter") }, "Create Skin"),
           el("button", { className: "dih-btn", onClick: () => triggerAction("rescanSwapFiles") }, "Rescan Swap/"),
           el("button", { className: "dih-btn", onClick: () => triggerAction("shuffleSkins") }, "Shuffle All"),
           el("button", { className: "dih-btn", onClick: () => triggerAction("resetSkins") }, "Reset"),
@@ -1229,10 +1387,10 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       )
     );
 
-    const customPackName = el("input", { className: "dih-input", value: "Custom-Pack", placeholder: "Pack name...", style: { width: "160px" } });
-    const colPrimary = el("input", { type: "color", value: "#850611", title: "Primary Color", style: { width: "36px", height: "30px", padding: "0", border: "none", background: "transparent", cursor: "pointer" } });
-    const colSecondary = el("input", { type: "color", value: "#12151b", title: "Secondary Color", style: { width: "36px", height: "30px", padding: "0", border: "none", background: "transparent", cursor: "pointer" } });
-    const colTrim = el("input", { type: "color", value: "#d1a152", title: "Trim Color", style: { width: "36px", height: "30px", padding: "0", border: "none", background: "transparent", cursor: "pointer" } });
+    const customPackName = el("input", { className: "dih-input", value: "Custom-Pack", placeholder: "Pack name...", style: { width: "150px" } });
+    const colPrimary = el("input", { type: "color", className: "dih-color", value: "#850611", title: "Primary Color" });
+    const colSecondary = el("input", { type: "color", className: "dih-color", value: "#12151b", title: "Secondary Color" });
+    const colTrim = el("input", { type: "color", className: "dih-color", value: "#d1a152", title: "Trim Color" });
     const patSel = el("select", { className: "dih-select" }, [
       el("option", { value: "carbon" }, "Carbon Weave"),
       el("option", { value: "topo" }, "Topo Contours"),
@@ -1286,18 +1444,19 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       ]),
     ]);
 
-    // Custom Studio Vault Quick-Equip cards with thumbnails
+    // Custom Vault Quick-Equip cards with thumbnails
     const vaultBlock = customSkinsCache.length
-      ? el("div", { className: "dih-grid-3" },
+      ? el("div", { className: "dih-grid-2" },
           customSkinsCache.map((cs) =>
             el("div", { className: "dih-panel", style: { display: "flex", alignItems: "center", gap: "10px" } }, [
               el("img", { className: "dih-vault-thumb", src: cs.customUrl || cs.url || "", alt: cs.name }),
               el("div", { style: { flex: "1", minWidth: "0" } }, [
                 el("div", { className: "dih-row-title", style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, cs.name),
-                el("div", { className: "dih-row-desc dih-mono" }, `${cs.weaponId.toUpperCase()} • ${Math.round(((cs.sizeBytes ?? cs.bytes) || 0) / 1024)} KB`),
+                el("div", { className: "dih-row-desc dih-mono", style: { whiteSpace: "nowrap" } }, `${cs.weaponId.toUpperCase()} • ${Math.round(((cs.sizeBytes ?? cs.bytes) || 0) / 1024)} KB`),
               ]),
               el("button", {
                 className: "dih-btn",
+                style: { flexShrink: "0" },
                 onClick: async () => {
                   await updateSetting(`skins.weapons.${cs.weaponId}`, {
                     mode: "custom",
@@ -1311,7 +1470,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
             ])
           )
         )
-      : el("div", { className: "dih-panel dih-row-desc" }, "No custom skins saved yet. Click \"Create Skin\" to paint one in 3D Studio.");
+      : el("div", { className: "dih-panel dih-row-desc" }, "No Vault skins saved yet. Bake a Shader Pack above or drop custom .webp files into Swap/.");
 
     const weaponsGrid = el("div", { className: "dih-grid-2" });
     for (const [weaponId, weapon] of Object.entries(catalog.WEAPONS)) {
@@ -1320,10 +1479,10 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       const modeSel = el("select", { className: "dih-select" }, [
         el("option", { value: "default", selected: cfg.mode === "default" ? "selected" : null }, "Default Game Skin"),
         el("option", { value: "official", selected: cfg.mode === "official" ? "selected" : null }, "Official Skin Pool"),
-        el("option", { value: "custom", selected: cfg.mode === "custom" ? "selected" : null }, "Custom Studio Skin"),
+        el("option", { value: "custom", selected: cfg.mode === "custom" ? "selected" : null }, "Custom Vault Skin"),
       ]);
 
-      const officialSel = el("select", { className: "dih-select", style: { flex: "1" } },
+      const officialSel = el("select", { className: "dih-select", style: { flex: "1", minWidth: "0" } },
         catalog.OFFICIAL_SKINS.map((sk) =>
           el("option", { value: sk.id, selected: cfg.officialId === sk.id ? "selected" : null }, `${sk.name} (${sk.rarity})`)
         )
@@ -1333,8 +1492,8 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         [0, 1, 2, 3, 4].map((w) => el("option", { value: String(w), selected: Number(cfg.wear) === w ? "selected" : null }, `Wear ${w}`))
       );
 
-      const customSel = el("select", { className: "dih-select", style: { flex: "1" } }, [
-        el("option", { value: "" }, customSkinsCache.length ? "-- Choose Custom Skin --" : "-- None yet (Open Studio) --"),
+      const customSel = el("select", { className: "dih-select", style: { flex: "1", minWidth: "0" } }, [
+        el("option", { value: "" }, customSkinsCache.length ? "-- Choose Custom Skin --" : "-- None yet (Bake Pack Above) --"),
         ...customSkinsCache.map((cs) =>
           el("option", { value: cs.fileName, selected: cfg.customFile === cs.fileName ? "selected" : null }, `${cs.name} [${cs.weaponId.toUpperCase()}]`)
         ),
@@ -1356,23 +1515,13 @@ DIH_NS.createCommandCenter = function createCommandCenter({
           el("div", { className: "dih-row" }, [
             el("div", {}, [
               el("div", { className: "dih-row-title" }, weapon.name),
-              el("div", { className: "dih-row-desc dih-mono" }, weapon.texture),
+              el("div", { className: "dih-row-desc dih-mono", style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, weapon.texture),
             ]),
             modeSel,
           ]),
-          el("div", { style: { display: "flex", gap: "6px", alignItems: "center" } }, [
-            ...(cfg.mode === "custom" ? [customSel] : [officialSel, wearSel]),
-            el("button", {
-              className: "dih-btn",
-              title: `Open ${weapon.shortName} in 3D Skin Studio`,
-              onClick: () => api?.openStudio?.("painter", weaponId),
-            }, "3D"),
-            el("button", {
-              className: "dih-btn",
-              title: `Practice ${weapon.shortName} spray in Aim Trainer`,
-              onClick: () => api?.openStudio?.("aimtrainer", weaponId),
-            }, "Aim"),
-          ]),
+          el("div", { style: { display: "flex", gap: "6px", alignItems: "center", minWidth: "0" } },
+            cfg.mode === "custom" ? [customSel] : [officialSel, wearSel]
+          ),
         ])
       );
     }
@@ -1383,18 +1532,18 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         { value: "dih_minimal", label: "Dih Minimal Cross" },
         { value: "dih_dot", label: "Dih Micro-Dot" },
         { value: "dih_rangefinder", label: "Dih Mil-Dot Rangefinder" },
-      ]),
-      makeSelectCard("Client Menu Logo", "Centered 1400x300 promo/logo.webp", "skins.extraSwaps.logo", [
+      ], false, true),
+      makeSelectCard("Client Menu Logo", "Centered 1400x300 logo.webp", "skins.extraSwaps.logo", [
         { value: "dih_grey", label: "Dih Minimalist Grey" },
         { value: "default", label: "Deadshot Default" },
-      ]),
+      ], false, true),
       makeSelectCard("Skybox Swap Folder", "Reads user swap/skybox/", "skins.extraSwaps.skybox", [
         { value: "default", label: "Default Sky" },
         { value: "dih_graphite", label: "Custom swap/skybox/dih_graphite" },
-      ]),
+      ], false, true),
     ]);
 
-    stageBody.append(
+    paneEl.append(
       topBar,
       syncOpts,
       el("div", { className: "dih-section-title" }, "SHADER & CUSTOM SKIN PACKS (ALL 7 GUNS)"),
@@ -1410,8 +1559,8 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function renderCorsair() {
-    stageTitle.textContent = "Corsair RGB & OpenRGB";
-    stageSub.textContent = "HID VID 0x1B1C • OpenRGB 6742 • Virtual K70";
+    stageTitle.textContent = "Corsair RGB";
+    stageSub.textContent = "HID VID 0x1B1C • OpenRGB :6742 • Virtual K70";
 
     const st = corsairStatusCache || {};
     const hwSummary = st.frame?.statusBanner || "Checking hardware...";
@@ -1449,7 +1598,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const grid = el("div", { className: "dih-grid-2" }, [
       makeToggleCard("Master RGB Engine", "Hardware & virtual lighting", "corsair.enabled"),
       makeSelectCard("Effect Mode", "Reactive telemetry lighting", "corsair.mode", [
-        { value: "reactive_tactical", label: "Reactive Tactical (Fire + ADS + Reload)" },
+        { value: "reactive_tactical", label: "Reactive Tactical" },
         { value: "fps_thermal", label: "FPS Thermal Gradient" },
         { value: "ping_health", label: "Ping Health Aura" },
         { value: "breathing", label: "Obsidian Breathing" },
@@ -1474,21 +1623,25 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       makeColorCard("ADS Accent Color", "corsair.adsColor"),
     ]);
 
-    stageBody.append(statusCard, openRgbConnect, grid);
+    paneEl.append(statusCard, openRgbConnect, grid);
   }
 
   function renderCrosshairAndHud() {
-    stageTitle.textContent = "Crosshair, HUD & Chat";
-    stageSub.textContent = "SVG reticle • F1–F9 hides • Auto-Join match chat";
+    stageTitle.textContent = "Crosshair & HUD";
+    stageSub.textContent = "SVG reticle • F1–F9 hides • Match auto-chat";
 
     const s = getSettings();
     const previewBox = el("div", { className: "dih-xhair-preview" });
-    crosshairEngine.renderSvgToContainer(previewBox, s.crosshair, 0, false);
-
     const shareInput = el("input", {
       className: "dih-input dih-mono",
       style: { flex: "1", fontSize: "11px" },
       value: encodeCrosshairCode(s.crosshair || {}),
+    });
+    bindSync((cur) => {
+      crosshairEngine.renderSvgToContainer(previewBox, cur.crosshair, 0, false);
+      if (document.activeElement !== shareInput) {
+        shareInput.value = encodeCrosshairCode(cur.crosshair || {});
+      }
     });
 
     const shareRow = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
@@ -1582,6 +1735,13 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       value: s.crosshair?.customSvgOrUrl || "",
     });
     customInput.addEventListener("change", () => updateSetting("crosshair.customSvgOrUrl", customInput.value));
+    const customInputCard = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
+      el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" } }, [
+        el("span", { className: "dih-row-title" }, "Custom Reticle SVG / Image URL"),
+        el("span", { className: "dih-row-desc" }, "Used when Geometry = Custom"),
+      ]),
+      customInput,
+    ]);
 
     const widgetsGrid = el("div", { className: "dih-grid-2" }, [
       makeToggleCard("Master HUD (F9)", "Panic hide/show all overlays", "hud.enabled"),
@@ -1643,6 +1803,10 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       value: s.hud?.companionGifPath || "",
     });
     gifInput.addEventListener("change", () => updateSetting("hud.companionGifPath", gifInput.value));
+    const gifCard = el("div", { className: "dih-panel", style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
+      el("div", { className: "dih-row-title" }, "Companion Overlay GIF / Image URL"),
+      gifInput,
+    ]);
 
     const xSub = makeSubTabs(
       [
@@ -1653,23 +1817,23 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       (id) => { activeCrosshairSub = id; }
     );
 
-    stageBody.append(xSub);
+    paneEl.append(xSub);
     if (activeCrosshairSub === "reticle") {
-      stageBody.append(topGrid, proXhairBar, shareRow, customInput, xhairGrid);
+      paneEl.append(topGrid, proXhairBar, shareRow, customInputCard, xhairGrid);
     } else {
-      stageBody.append(
+      paneEl.append(
         el("div", { className: "dih-section-title" }, "ESPORTS HUD OVERLAYS & INDIVIDUAL HIDE HOTKEYS"),
         widgetsGrid,
         el("div", { className: "dih-section-title" }, "MATCH JOIN AUTO-CHAT AUTOMATION"),
         autoChatCard,
-        gifInput
+        gifCard
       );
     }
   }
 
   function renderVisualsAudioSync() {
-    stageTitle.textContent = "Visual Grading, Aim/eDPI & Deadshot Sync";
-    stageSub.textContent = "Real-time GPU color filters, eDPI / cm-360° calculator & dsio:settings:2 / dsio:keybinds:2 inspector";
+    stageTitle.textContent = "Visuals & Sync";
+    stageSub.textContent = "Color grading • eDPI • dsio:settings:2";
 
     const s = getSettings();
     const ds = readDeadshotSettings();
@@ -1693,13 +1857,22 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       updateSetting("hud.mouseDpi", Math.max(100, Math.min(25600, Number(dpiInput.value) || 800)));
     });
 
+    const aimDescEl = el("div", { className: "dih-row-desc dih-mono" },
+      `Mouse DPI x dsio:settings:2 Sens (${ds?.sensitivity ?? "--"}) => eDPI: ${eDpi} • Est. ${cmPer360} cm/360°`
+    );
+    bindSync((cur) => {
+      const curDpi = Number(cur.hud?.mouseDpi || 800);
+      const curEdpi = Math.round(curDpi * inGameSens);
+      const curCm = inGameSens > 0 ? ((2.54 * 16363) / Math.max(1, curEdpi)).toFixed(1) : "--";
+      aimDescEl.textContent = `Mouse DPI x dsio:settings:2 Sens (${ds?.sensitivity ?? "--"}) => eDPI: ${curEdpi} • Est. ${curCm} cm/360°`;
+      if (document.activeElement !== dpiInput) dpiInput.value = String(curDpi);
+    });
+
     const aimCard = el("div", { className: "dih-panel" }, [
       el("div", { className: "dih-row", style: { marginBottom: "8px" } }, [
         el("div", {}, [
           el("div", { className: "dih-row-title" }, "eDPI & Estimated cm/360° Calculator"),
-          el("div", { className: "dih-row-desc dih-mono" },
-            `Mouse DPI x dsio:settings:2 Sens (${ds?.sensitivity ?? "--"}) => eDPI: ${eDpi} • Est. ${cmPer360} cm/360°`
-          ),
+          aimDescEl,
         ]),
         el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
           el("span", { className: "dih-tel-k" }, "DPI:"),
@@ -1853,46 +2026,31 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       (id) => { activeToolsSub = id; }
     );
 
-    stageBody.append(toolsSub);
-    const trainerCard = el("div", { className: "dih-panel" }, [
-      el("div", { className: "dih-row", style: { marginBottom: "8px" } }, [
-        el("div", {}, [
-          el("div", { className: "dih-row-title" }, "Deadshot 7-Gun Ballistic Aim Trainer (Insert)"),
-          el("div", { className: "dih-row-desc" },
-            "Pointer-Lock 3D trainer matched to Deadshot AR/SMG/AWP/Shotgun/DMR/Pistol/LMG RPM, spray recoil patterns, reload timings, and your live Dih crosshair."
+    paneEl.append(toolsSub);
+    const trainerCard = el("div", { className: "dih-panel dih-soon-card" }, [
+      el("div", { style: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" } }, [
+        el("div", { style: { minWidth: "0" } }, [
+          el("div", { className: "dih-row-title" }, "7-Gun Ballistic Aim Trainer (Ins)"),
+          el("div", { className: "dih-row-desc", style: { marginTop: "3px" } },
+            "Dedicated 7-gun recoil/flick trainer is Coming Soon and temporarily paused to keep in-game & panel frame times maximum speed. Your live eDPI calculator and Deadshot sync controls remain ready below."
           ),
         ]),
-        el("button", {
-          className: "dih-btn primary",
-          onClick: () => api?.openStudio?.("aimtrainer", "ar"),
-        }, "Launch Aim Trainer"),
+        el("span", { className: "dih-soon-badge" }, "Coming Soon"),
       ]),
-      el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
-        { id: "ar", label: "AR Spray Control (650 RPM)" },
-        { id: "smg", label: "Vector SMG Tracking (960 RPM)" },
-        { id: "awp", label: "AWP Quick-Scope Flicks" },
-        { id: "shotgun", label: "Shotgun 8-Pellet Entry" },
-        { id: "dmr", label: "DMR Headshot Tap" },
-      ].map((g) =>
-        el("button", {
-          className: "dih-btn",
-          onClick: () => api?.openStudio?.("aimtrainer", g.id),
-        }, g.label)
-      )),
     ]);
 
     if (activeToolsSub === "visuals") {
-      stageBody.append(el("div", { className: "dih-section-title" }, "CANVAS COLOR GRADING, BLACK EQ & OPTICS"), visGrid);
+      paneEl.append(el("div", { className: "dih-section-title" }, "CANVAS COLOR GRADING, BLACK EQ & OPTICS"), visGrid);
     } else if (activeToolsSub === "aim") {
-      stageBody.append(trainerCard, aimCard, syncPanel, keybindCard);
+      paneEl.append(trainerCard, aimCard, syncPanel, keybindCard);
     } else {
-      stageBody.append(el("div", { className: "dih-section-title" }, "AUDIO, WINDOW & PRIVACY"), winAudioGrid);
+      paneEl.append(el("div", { className: "dih-section-title" }, "AUDIO, WINDOW & PRIVACY"), winAudioGrid);
     }
   }
 
   function renderThemeAndProfiles() {
-    stageTitle.textContent = "Minimalist Theme, Hotkeys, Profiles & Overview";
-    stageSub.textContent = "Obsidian & Titanium palettes • Interactive shortcut rebinding • Credits: ewwhardik";
+    stageTitle.textContent = "Theme & Hotkeys";
+    stageSub.textContent = "Titanium palettes • Hotkey rebinds • Profiles";
 
     const s = getSettings();
     const presetRow = el("div", { className: "dih-grid-2" },
@@ -1921,6 +2079,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         { value: "compact", label: "Compact (Dense View)" },
       ]),
       makeSliderCard("Command Modal Frosted Glass Blur", "theme.blurPx", 0, 32, 2, "px"),
+      makeToggleCard("Zero-Blur Solid HUD (Anti-Lag)", "Off = activates Frosted Glass Blur above", "performance.noBackdropBlurHud"),
       makeSliderCard("Panel Surface Opacity", "theme.bgOpacity", 0.35, 1, 0.02, ""),
       makeSliderCard("Corner Radius", "theme.compactCornerRadius", 0, 18, 1, "px"),
       makeToggleCard("Deadshot Native Menu & Logo Polish", "Aligns centered logo & dark matte lobby chrome", "theme.minimalistGameUi"),
@@ -1937,8 +2096,8 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       { key: "toggleCrosshair", label: "Toggle Custom Crosshair", def: "F2" },
       { key: "toggleKeysOverlay", label: "Toggle Keystrokes Overlay", def: "F3" },
       { key: "toggleWatermark", label: "Toggle Top-Right Watermark", def: "F1" },
-      { key: "openStudio", label: "Open 3D Skin Studio", def: "F7" },
-      { key: "openAimTrainer", label: "Open 7-Gun Aim Trainer", def: "Insert" },
+      { key: "openStudio", label: "Open Corsair & Studio Hub", def: "F7" },
+      { key: "openAimTrainer", label: "Aim Trainer Key (Coming Soon)", def: "Insert" },
       { key: "muteMaster", label: "Master Mute Client", def: "F8" },
       { key: "screenshot", label: "Capture Screenshot", def: "F10" },
       { key: "fullscreen", label: "Toggle Borderless Fullscreen", def: "F11" },
@@ -1948,18 +2107,23 @@ DIH_NS.createCommandCenter = function createCommandCenter({
 
     const bindGrid = el("div", { className: "dih-grid-2" },
       HOTKEY_DEFS.map((hk) => {
-        const curCode = s.hotkeys?.[hk.key] || hk.def;
-        const btn = el("button", { className: "dih-btn dih-mono" }, curCode);
+        const btn = el("button", { className: "dih-btn dih-mono" }, s.hotkeys?.[hk.key] || hk.def);
+        bindSync((curS) => {
+          if (!btn.dataset.listening) btn.textContent = curS.hotkeys?.[hk.key] || hk.def;
+        });
         btn.addEventListener("click", () => {
+          btn.dataset.listening = "1";
           btn.textContent = "Press Key...";
           const listener = (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
             window.removeEventListener("keydown", listener, true);
+            delete btn.dataset.listening;
             if (ev.code === "Escape") {
-              btn.textContent = curCode;
+              btn.textContent = getSettings().hotkeys?.[hk.key] || hk.def;
               return;
             }
+            btn.textContent = ev.code;
             updateSetting(`hotkeys.${hk.key}`, ev.code);
             playTone("click", 0.4);
             toast(`Rebound "${hk.label}" -> ${ev.code}`);
@@ -1987,7 +2151,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       ]),
     ]);
 
-    stageBody.append(
+    paneEl.append(
       buildCreditsCard(),
       el("div", { className: "dih-section-title" }, "PREMIUM GREY PRESETS"),
       presetRow,
@@ -1999,20 +2163,85 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     );
   }
 
-  function renderStage() {
+  // --- Pane cache ---
+  // Each view is built once into its own pane. Inactive panes stay in the DOM with
+  // `content-visibility: hidden`, which keeps their style + layout cached, so tab
+  // switches and re-opens skip DOM building, style recalc and layout entirely.
+  // Any settings change bumps settingsRev; a stale pane is rebuilt the next time it's shown.
+  const viewKey = () => (searchInput.value.trim() ? "search" : activeTab);
+
+  function showPane(pane) {
+    if (activePane && activePane !== pane) {
+      activePane.scroll = stageBody.scrollTop;
+      activePane.el.classList.add("off");
+    }
+    activePane = pane;
+    boundSyncers = pane.syncers;
+    dynamicHostUpdater = pane.hostUpdater;
+    stageTitle.textContent = pane.title;
+    stageSub.textContent = pane.sub;
+    pane.el.classList.remove("off");
+  }
+
+  // Rebuild the current view. Called whenever structure changed (actions, filters, sub-tabs),
+  // so every other cached pane is dropped too and rebuilt lazily.
+  function renderStage(opts = {}) {
+    const key = viewKey();
+    const keepScroll = opts.preserveScroll ?? activePane?.key === key;
+    const prevScroll = stageBody.scrollTop;
+    for (const p of panes.values()) p.el.remove();
+    panes.clear();
+    activePane = null;
+    buildPane(key);
+    stageBody.scrollTop = keepScroll ? prevScroll : 0;
+  }
+
+  function buildPane(key) {
     const s = getSettings();
     shell.classList.toggle("compact", s.theme?.density === "compact");
     shell.classList.toggle("compact-rail", Boolean(s.esportsHud?.compactNavRail));
     rebuildQuickDock();
-    stageBody.innerHTML = "";
-    const hasQuery = Boolean(searchInput.value.trim());
-    if (hasQuery || activeTab === "overview") renderOverview();
-    else if (activeTab === "metrics") renderMetricsAndPerf();
-    else if (activeTab === "skins") renderSkins();
-    else if (activeTab === "corsair") renderCorsair();
-    else if (activeTab === "crosshair") renderCrosshairAndHud();
-    else if (activeTab === "tools") renderVisualsAudioSync();
-    else if (activeTab === "theme") renderThemeAndProfiles();
+
+    const stale = panes.get(key);
+    if (stale) {
+      stale.el.remove();
+      if (activePane === stale) activePane = null;
+    }
+
+    const pane = { key, el: el("div", { className: "dih-pane" }), syncers: [], hostUpdater: null, title: "", sub: "", scroll: 0, rev: settingsRev };
+    boundSyncers = pane.syncers;
+    dynamicHostUpdater = null;
+    paneEl = pane.el;
+
+    if (key === "search" || key === "overview") renderOverview();
+    else if (key === "metrics") renderMetricsAndPerf();
+    else if (key === "skins") renderSkins();
+    else if (key === "corsair") renderCorsair();
+    else if (key === "crosshair") renderCrosshairAndHud();
+    else if (key === "tools") renderVisualsAudioSync();
+    else if (key === "theme") renderThemeAndProfiles();
+
+    pane.hostUpdater = dynamicHostUpdater;
+    pane.title = stageTitle.textContent;
+    pane.sub = stageSub.textContent;
+    stageBody.appendChild(pane.el);
+    panes.set(key, pane);
+    showPane(pane);
+    return pane;
+  }
+
+  // Show the current view from cache when it's still fresh, else (re)build just that pane.
+  function showView() {
+    const key = viewKey();
+    const cached = panes.get(key);
+    if (!cached || cached.rev !== settingsRev || key === "search") {
+      buildPane(key);
+      stageBody.scrollTop = 0;
+      return;
+    }
+    showPane(cached);
+    stageBody.scrollTop = cached.scroll;
+    dynamicHostUpdater?.();
   }
 
   function switchTab(tabId) {
@@ -2020,10 +2249,14 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     for (const [id, btn] of Object.entries(navButtons)) {
       btn.classList.toggle("active", id === tabId);
     }
-    renderStage();
+    showView();
   }
 
-  searchInput.addEventListener("input", () => renderStage());
+  let searchTimer = 0;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(showView, 90);
+  });
 
   backdrop.addEventListener("click", (e) => {
     if (e.target === backdrop) close();
@@ -2031,26 +2264,52 @@ DIH_NS.createCommandCenter = function createCommandCenter({
 
   async function open() {
     bootAnalyzer?.dismiss?.();
-    backdrop.classList.remove("dih-hidden");
+    backdrop.classList.remove("dih-closed");
+    telemetryHud?.setMenuOpen?.(true);
     if (document.pointerLockElement) {
       document.exitPointerLock?.();
     }
-    try {
-      customSkinsCache = (await api?.listCustomSkins?.()) || [];
-      corsairStatusCache = await api?.getCorsairStatus?.();
-      liveSnapshot = await api?.getLiveMetrics?.();
+    showView();
+
+    Promise.allSettled([
+      api?.listCustomSkins?.(),
+      api?.getCorsairStatus?.(),
+      api?.getLiveMetrics?.(),
+    ]).then(([skinsRes, corsairRes, liveRes]) => {
+      let structuralChange = false;
+      if (skinsRes?.status === "fulfilled" && Array.isArray(skinsRes.value)) {
+        const changedCount = skinsRes.value.length !== customSkinsCache.length;
+        customSkinsCache = skinsRes.value;
+        if (activeTab === "skins" && changedCount) structuralChange = true;
+      }
+      if (corsairRes?.status === "fulfilled" && corsairRes.value) {
+        corsairStatusCache = corsairRes.value;
+        if (activeTab === "corsair") structuralChange = true;
+      }
+      if (liveRes?.status === "fulfilled" && liveRes.value) {
+        liveSnapshot = liveRes.value;
+        // Performance tab prints live memory statically; refresh it on open.
+        if (activeTab === "metrics") structuralChange = true;
+      }
       const m = telemetryHud?.getCurrentMetrics?.();
       if (m) liveMiniStatus.textContent = `${m.fps || 0} FPS • ${m.monitorHz || 60}HZ`;
-    } catch {}
-    renderStage();
+      if (!isOpen()) return;
+      if (structuralChange) {
+        renderStage({ preserveScroll: true, animate: false });
+      } else {
+        dynamicHostUpdater?.();
+      }
+    }).catch(() => {});
   }
 
+  // Closed = visibility:hidden (not display:none) so the built panel keeps its layout and reopens instantly.
   function close() {
-    backdrop.classList.add("dih-hidden");
+    backdrop.classList.add("dih-closed");
+    telemetryHud?.setMenuOpen?.(false);
   }
 
   function isOpen() {
-    return !backdrop.classList.contains("dih-hidden");
+    return !backdrop.classList.contains("dih-closed");
   }
 
   function toggle() {
@@ -2058,13 +2317,19 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     else open();
   }
 
+  // Pre-build the dashboard while idle so even the first open is instant.
+  (window.requestIdleCallback || setTimeout)(() => {
+    if (!panes.size) renderStage();
+  }, { timeout: 4000 });
+
   return {
     open,
     close,
     toggle,
     isOpen,
     refresh: () => {
-      if (isOpen()) renderStage();
+      settingsRev++;
+      if (isOpen()) syncUiFromSettings();
     },
   };
 };

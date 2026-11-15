@@ -181,8 +181,11 @@ DIH_NS.createKeysOverlay = function createKeysOverlay(shadowRoot, getSettings, s
     const s = getSettings();
     if (!s.hud?.enabled || !s.hud?.keysOverlayEnabled) return;
     const now = performance.now();
-    kLmb.subEl.textContent = `${pruneClicks(lmbClicks, now)} CPS`;
-    kRmb.subEl.textContent = `${pruneClicks(rmbClicks, now)} CPS`;
+    // Only touch the DOM when the number changes (10 Hz timer would otherwise relayout the HUD constantly).
+    const l = `${pruneClicks(lmbClicks, now)} CPS`;
+    const r = `${pruneClicks(rmbClicks, now)} CPS`;
+    if (kLmb.subEl.textContent !== l) kLmb.subEl.textContent = l;
+    if (kRmb.subEl.textContent !== r) kRmb.subEl.textContent = r;
   }, 100);
 
   updateVisibility();

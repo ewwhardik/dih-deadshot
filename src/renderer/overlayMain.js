@@ -249,7 +249,7 @@ DIH_NS.boot = async function boot(shadowCss) {
       await toggleSettingPath("hud.watermarkEnabled", "Watermark Visible", "Watermark Hidden");
     } else if (matchesKey(hk.openAimTrainer || "Insert")) {
       e.preventDefault();
-      api?.openStudio?.("aimtrainer");
+      toast("7-Gun Aim Trainer — Coming Soon");
     }
   });
 

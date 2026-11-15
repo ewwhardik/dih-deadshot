@@ -106,29 +106,49 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
   let activeCap = 0;
   let rafWrapped = false;
 
+  // One allow/skip decision per frame timestamp (all rAF callbacks of a frame share `ts`), on a
+  // drift-free schedule so the effective rate lands on the cap instead of rounding down to it.
+  let pacedFrameTs = -1;
+  let pacedAllow = true;
+  let pacedNextDue = 0;
+  function pacedFrameAllowed(ts) {
+    if (ts !== pacedFrameTs) {
+      pacedFrameTs = ts;
+      const interval = 1000 / activeCap;
+      pacedAllow = ts >= pacedNextDue - 1;
+      if (pacedAllow) pacedNextDue = ts - pacedNextDue > interval ? ts + interval : pacedNextDue + interval;
+    }
+    return pacedAllow;
+  }
+
   function applyFpsPacerConfig(capNum) {
     const cap = Math.max(0, Math.round(Number(capNum || 0)));
     if (cap === activeCap) return;
     activeCap = cap;
+    pacedNextDue = 0;
     if (cap > 0 && !rafWrapped) {
       rafWrapped = true;
       window.requestAnimationFrame = function pacedRaf(cb) {
         if (activeCap <= 0) return origRaf(cb);
-        const minDelta = 1000 / activeCap - 0.5;
-        let lastRun = window.__dihLastPacedTs || 0;
         return origRaf(function step(ts) {
-          if (activeCap <= 0 || ts - lastRun >= minDelta) {
-            window.__dihLastPacedTs = ts;
-            cb(ts);
-          } else {
-            window.requestAnimationFrame(cb);
-          }
+          if (activeCap <= 0 || pacedFrameAllowed(ts)) cb(ts);
+          else window.requestAnimationFrame(cb);
         });
       };
     } else if (cap === 0 && rafWrapped) {
       rafWrapped = false;
       window.requestAnimationFrame = origRaf;
     }
+  }
+
+  // While the Command Center is open the player isn't aiming, so pace the game's rAF to the
+  // monitor refresh rate: no visible change, but it frees the main thread + GPU for the menu.
+  let menuOpen = false;
+  function effectiveCap() {
+    const user = Math.max(0, Math.round(Number(getSettings().performance?.softwareFpsCap || 0)));
+    if (!menuOpen) return user;
+    const menuCap = Math.max(60, currentHz);
+    return user > 0 ? Math.min(user, menuCap) : menuCap;
   }
 
   const primaryDisplay = staticHw?.displays?.primary;
@@ -178,9 +198,14 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
     sparkCtx.stroke();
   }
 
+  let dsCache = null;
+  let dsReadAt = -1e9;
+  const dateFmt = new Intl.DateTimeFormat([], { month: "short", day: "numeric" });
+  const timeFmt = new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit" });
+
   function render() {
     const s = getSettings();
-    applyFpsPacerConfig(s.performance?.softwareFpsCap);
+    applyFpsPacerConfig(effectiveCap());
     const hud = s.hud || {};
     const hidden = !hud.enabled || !hud.statsEnabled;
     root.classList.toggle("dih-hidden", hidden);
@@ -259,7 +284,13 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
       setTextDiff(kvApp.val, "--M");
     }
 
-    const ds = readDeadshotSettings();
+    // Game settings blob lives in localStorage; re-parse at most every 2s instead of 4x/sec.
+    const nowMs = performance.now();
+    if (nowMs - dsReadAt > 2000) {
+      dsReadAt = nowMs;
+      dsCache = readDeadshotSettings();
+    }
+    const ds = dsCache;
     kvSens.row.classList.toggle("dih-hidden", !hud.showSens);
     setTextDiff(kvSens.val, ds?.sensitivity != null ? String(ds.sensitivity) : "--");
 
@@ -269,10 +300,10 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
     const gpuText = hud.showGpu ? `${gpuShort} ${gpuVram}`.trim() : "";
     const clockParts = [];
     if (hud.showDate) {
-      clockParts.push(new Date().toLocaleDateString([], { month: "short", day: "numeric" }));
+      clockParts.push(dateFmt.format(new Date()));
     }
     if (hud.showTime) {
-      clockParts.push(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+      clockParts.push(timeFmt.format(new Date()));
     }
     if (hud.showUptime && latestSystem) {
       const m = Math.floor(latestSystem.uptimeSec / 60);
@@ -367,6 +398,10 @@ DIH_NS.createTelemetryHud = function createTelemetryHud(shadowRoot, getSettings,
       maxFps = 0;
     },
     refresh: render,
+    setMenuOpen: (open) => {
+      menuOpen = Boolean(open);
+      applyFpsPacerConfig(effectiveCap());
+    },
     destroy: () => {
       dead = true;
       clearInterval(sysInterval);

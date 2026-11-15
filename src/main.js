@@ -1,7 +1,7 @@
 /**
  * Dih Client Main Process
  * Uncapped FPS Chromium flags, stealth browser config, single-pass WebRequest skin/adblock pipeline,
- * real hardware/display telemetry, Corsair OpenRGB/WebHID bridge & isolated 3D Skin Studio window.
+ * real hardware/display telemetry, Corsair OpenRGB/WebHID bridge & isolated Studio window.
  */
 
 const fs = require("fs");
@@ -509,10 +509,10 @@ function createMainWindow() {
       mainWindow.webContents.toggleDevTools();
     } else if (input.key === "F7") {
       event.preventDefault();
-      openStudioWindow({ tab: "painter" });
+      openStudioWindow({ tab: "corsair" });
     } else if (input.key === "Insert") {
       event.preventDefault();
-      openStudioWindow({ tab: "aimtrainer" });
+      mainWindow.webContents.send("dih:action", "toast:7-Gun Aim Trainer — Coming Soon");
     } else if (input.key === "F8") {
       event.preventDefault();
       const nextMute = !Boolean(settingsStore.settings.audio?.masterMuted);
@@ -572,9 +572,9 @@ function createMainWindow() {
   });
 }
 
-function openStudioWindow(targetArg = "painter") {
+function openStudioWindow(targetArg = "corsair") {
   const isObj = targetArg && typeof targetArg === "object";
-  const initialTab = isObj ? (targetArg.tab || "painter") : String(targetArg || "painter");
+  const initialTab = isObj ? (targetArg.tab || "corsair") : String(targetArg || "corsair");
   const targetWeapon = isObj && targetArg.weapon ? String(targetArg.weapon) : "";
 
   if (studioWindow && !studioWindow.isDestroyed()) {
@@ -598,7 +598,7 @@ function openStudioWindow(targetArg = "painter") {
     height: 860,
     minWidth: 1020,
     minHeight: 680,
-    title: "Dih Studio — 3D Skin Creator, 7-Gun Aim Trainer, Corsair RGB & Project Explorer",
+    title: "Dih Studio — Corsair RGB & Project Explorer",
     backgroundColor: "#0e0f12",
     autoHideMenuBar: true,
     webPreferences: {
@@ -1031,7 +1031,7 @@ function setupIpcHandlers() {
     return updated;
   });
 
-  ipcMain.handle("dih:open-studio", (_ev, targetArg = "painter") => {
+  ipcMain.handle("dih:open-studio", (_ev, targetArg = "corsair") => {
     openStudioWindow(targetArg);
     return { ok: true };
   });

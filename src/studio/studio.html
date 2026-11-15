@@ -3,16 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dih Studio — 3D Skin Creator, 7-Gun Aim Trainer, Corsair RGB &amp; Explorer</title>
+  <title>Dih Studio — Corsair RGB &amp; Deadshot RE Explorer</title>
   <link rel="stylesheet" href="./studio.css" />
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "./vendor/three/build/three.module.min.js",
-        "three/addons/": "./vendor/three/jsm/"
-      }
-    }
-  </script>
 </head>
 <body>
   <div class="studio-app">
@@ -35,10 +27,10 @@
       </div>
 
       <nav class="topbar-tabs">
-        <button class="tab-btn active" data-tab="painter">3D Gun Skin Studio</button>
-        <button class="tab-btn" data-tab="aimtrainer">7-Gun Aim Trainer</button>
-        <button class="tab-btn" data-tab="corsair">Corsair &amp; Virtual RGB</button>
+        <button class="tab-btn active" data-tab="corsair">Corsair &amp; Virtual RGB</button>
         <button class="tab-btn" data-tab="explorer">Deadshot RE Explorer</button>
+        <button class="tab-btn soon-tab" data-tab="painter">3D Skin Studio <span class="soon-chip">Soon</span></button>
+        <button class="tab-btn soon-tab" data-tab="aimtrainer">Aim Trainer <span class="soon-chip">Soon</span></button>
       </nav>
 
       <div class="topbar-actions">
@@ -48,124 +40,24 @@
       </div>
     </header>
 
-    <!-- TAB 1: 3D GUN SKIN STUDIO -->
-    <main class="studio-view active" id="view-painter">
-      <aside class="studio-sidebar">
-        <div class="group-label">Weapon &amp; Base Texture</div>
-        <select class="select" id="weaponSelect"></select>
-        <select class="select" id="baseSkinSelect"></select>
-        <div class="row-gap">
-          <button class="btn flex-1" id="btnLoadBase">Load Base</button>
-          <button class="btn flex-1" id="btnToggleMask">UV Mask: ON</button>
-        </div>
-
-        <div class="group-label">2D Paint Tools</div>
-        <div class="tool-grid">
-          <button class="btn tool-btn active" data-tool="brush">Brush</button>
-          <button class="btn tool-btn" data-tool="airbrush">Airbrush</button>
-          <button class="btn tool-btn" data-tool="line">Line</button>
-          <button class="btn tool-btn" data-tool="fill">Tint All</button>
-          <button class="btn tool-btn" data-tool="eraser">Erase Base</button>
-          <button class="btn" id="btnUndo">Undo</button>
-        </div>
-
-        <div class="control-row">
-          <span>Primary</span>
-          <input type="color" class="color-pick" id="paintColorA" value="#d4d8df" />
-          <span>Secondary</span>
-          <input type="color" class="color-pick" id="paintColorB" value="#242830" />
-        </div>
-
-        <label class="slider-label">
-          <span>Brush Size <b class="mono" id="lblBrushSize">26px</b></span>
-          <input type="range" id="rngBrushSize" min="2" max="120" value="26" />
-        </label>
-        <label class="slider-label">
-          <span>Opacity <b class="mono" id="lblBrushAlpha">100%</b></span>
-          <input type="range" id="rngBrushAlpha" min="5" max="100" value="100" />
-        </label>
-
-        <div class="group-label">Procedural Generators &amp; Shader Packs</div>
-        <div class="tool-grid">
-          <button class="btn" data-gen="royalflush">Royal Flush</button>
-          <button class="btn" data-gen="dualmask">Mask Dual-Tone</button>
-          <button class="btn" data-gen="topo">Slate Topo</button>
-          <button class="btn" data-gen="carbon">Carbon Weave</button>
-          <button class="btn" data-gen="shard">Geo Shard</button>
-          <button class="btn" data-gen="tiger">Tiger Stripe</button>
-          <button class="btn" data-gen="fade">Metallic Fade</button>
-          <button class="btn" data-gen="wear">Edge Wear</button>
-        </div>
-        <div class="row-gap" style="margin-top:6px;">
-          <button class="btn flex-1" id="btnImportFrag">Import .frag Shader</button>
-          <input type="file" id="inpFragFile" accept=".frag,.glsl,.fs,.txt" hidden />
-        </div>
-
-        <div class="group-label">Color Grading</div>
-        <label class="slider-label">
-          <span>Hue Shift <b class="mono" id="lblHue">0°</b></span>
-          <input type="range" id="rngHue" min="-180" max="180" value="0" />
-        </label>
-        <label class="slider-label">
-          <span>Saturation <b class="mono" id="lblSat">100%</b></span>
-          <input type="range" id="rngSat" min="0" max="220" value="100" />
-        </label>
-        <label class="slider-label">
-          <span>Contrast <b class="mono" id="lblCon">100%</b></span>
-          <input type="range" id="rngCon" min="50" max="180" value="100" />
-        </label>
-        <button class="btn" id="btnApplyGrade">Bake Color Grade to Canvas</button>
-
-        <div class="group-label">Decal / Typography Stamp</div>
-        <input class="input" id="txtStamp" placeholder="Clan tag or serial (e.g. DIH-01)" value="DIH-01" />
-        <button class="btn" id="btnStampCenter">Stamp Center UV</button>
-      </aside>
-
-      <section class="studio-center">
-        <div class="viewport-split">
-          <div class="pane">
-            <div class="pane-head">
-              <span>2D UV ATLAS CANVAS (1024×1024)</span>
-              <span class="mono muted" id="uvStatus">Loading base UV...</span>
-            </div>
-            <div class="canvas-stage" id="uvStage">
-              <div class="uv-pair">
-                <canvas id="uvCanvas" width="1024" height="1024"></canvas>
-                <canvas id="maskCanvas" width="1024" height="1024"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <div class="pane">
-            <div class="pane-head">
-              <span>LIVE 3D WEAPON PREVIEW</span>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <label class="check-inline"><input type="checkbox" id="chkGameFlat" checked /> Game Flat</label>
-                <label class="check-inline"><input type="checkbox" id="chkAutoSpin" checked /> Spin</label>
-                <label class="check-inline"><input type="checkbox" id="chkFlipY" /> FlipY</label>
-              </div>
-            </div>
-            <div class="gl-stage" id="glStage">
-              <div class="gl-caption mono" id="glCaption">Loading 3D geometry...</div>
-            </div>
+    <!-- TAB 1: 3D SKIN STUDIO (COMING SOON) -->
+    <main class="studio-view" id="view-painter">
+      <div class="coming-soon-wrap">
+        <div class="coming-soon-card">
+          <span class="soon-chip">Coming Soon</span>
+          <h2>3D Weapon Skin Studio</h2>
+          <p>The live WebGL .glb UV painter is being rebuilt as a faster standalone module and is currently paused to keep in-game FPS &amp; overlay response instantaneous.</p>
+          <p class="mono muted">Use Royal Flush .frag Shader Packs &amp; the O(1) .webp Skin Swapper directly in Command Center (RightShift -&gt; Skin Packs).</p>
+          <div class="row-gap" style="justify-content:center;margin-top:6px;">
+            <button class="btn primary" id="btnPainterCorsair">Open Corsair RGB</button>
+            <button class="btn" id="btnPainterFolder">Open Swap Folder</button>
           </div>
         </div>
-      </section>
-
-      <aside class="studio-vault">
-        <div class="group-label">Export &amp; Equip</div>
-        <input class="input" id="skinNameInput" placeholder="Skin name..." value="Obsidian-Prototype" />
-        <button class="btn" id="btnSaveSkin">Save .WEBP to Library</button>
-        <button class="btn primary" id="btnSaveEquip">Save &amp; Equip on Gun</button>
-        <button class="btn" id="btnImportFile">Import .WEBP / .PNG</button>
-
-        <div class="group-label" style="margin-top:8px;">Custom Skins Vault</div>
-        <div class="vault-list" id="vaultList"></div>
-      </aside>
+      </div>
     </main>
 
     <!-- TAB 2: CORSAIR RGB & VIRTUAL K70 LAB -->
-    <main class="studio-view" id="view-corsair">
+    <main class="studio-view active" id="view-corsair">
       <div class="corsair-lab">
         <div class="card-block row-between">
           <div>
@@ -241,14 +133,24 @@
       </div>
     </main>
 
-    <!-- TAB 4: PER-GUN BALLISTIC AIM TRAINER -->
+    <!-- TAB 4: 7-GUN BALLISTIC AIM TRAINER (COMING SOON) -->
     <main class="studio-view" id="view-aimtrainer">
-      <div id="aimTrainerRoot" style="height:100%;width:100%;min-height:0;"></div>
+      <div class="coming-soon-wrap">
+        <div class="coming-soon-card">
+          <span class="soon-chip">Coming Soon</span>
+          <h2>7-Gun Ballistic Aim Trainer</h2>
+          <p>The dedicated 3D recoil &amp; flick arena is Coming Soon and temporarily disabled to keep RAM &amp; UI response as fast as possible.</p>
+          <p class="mono muted">Live eDPI / cm-360° &amp; dsio:settings:2 sync tools remain active in Command Center -&gt; Visuals &amp; Sync.</p>
+          <div class="row-gap" style="justify-content:center;margin-top:6px;">
+            <button class="btn primary" id="btnAimCorsair">Open Corsair RGB</button>
+            <button class="btn" id="btnAimExplorer">Browse RE Explorer</button>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 
   <div class="studio-toast" id="studioToast"></div>
-  <script src="./shaderBaker.js"></script>
   <script type="module" src="./studio.js"></script>
 </body>
 </html>

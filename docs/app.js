@@ -1,8 +1,8 @@
 /* Dih Client Interactive GitHub Pages Showcase */
 (function () {
   const DATA = window.DIH_DOCS_DATA || {
-    version: "0.3.0",
-    featureCount: 196,
+    version: "0.4.0",
+    featureCount: 201,
     categories: [],
     features: [],
     weapons: [],
@@ -403,7 +403,7 @@
     skinRouteBox.innerHTML =
       `<div><strong>Intercept Match:</strong> https://deadshot.io/weapons/${dir}/${activeWeapon.texture.split("/")[2]}</div>` +
       `<div style="margin-top:4px; color:#58c98a"><strong>Dih Redirects To:</strong> deadshot.io/weapons/${dir}/skins/${skId}_${wear}.webp (Cached in RAM • 0ms stutter)</div>` +
-      `<div style="margin-top:4px; color:#939aa8"><strong>3D Model Ready:</strong> ${activeWeapon.model} + Offline UV Paint Studio</div>`;
+      `<div style="margin-top:4px; color:#939aa8"><strong>Target Mesh &amp; Baker:</strong> ${activeWeapon.model} • Royal Flush .frag Shader Pack (3D Studio Coming Soon)</div>`;
   }
 
   if (weaponTabs && DATA.weapons.length) {

@@ -717,7 +717,7 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
             Ok(updated)
         }
         "openStudio" => {
-            let tab = params.get("tab").and_then(|v| v.as_str()).unwrap_or("painter").to_string();
+            let tab = params.get("tab").and_then(|v| v.as_str()).unwrap_or("corsair").to_string();
             let weapon = params.get("weapon").and_then(|v| v.as_str()).unwrap_or("").to_string();
             let hwnd = {
                 let mut g = app.lock().unwrap();
@@ -1123,20 +1123,14 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
                             let _ = args.SetHandled(true);
                             let h = {
                                 let mut g = app_acc.lock().unwrap();
-                                g.pending_studio_tab = "painter".into();
+                                g.pending_studio_tab = "corsair".into();
                                 g.pending_studio_weapon.clear();
                                 g.main_hwnd
                             };
                             let _ = PostMessageW(Some(h), WM_APP_OPEN_STUDIO, WPARAM(0), LPARAM(0));
                         } else if vkey_matches_hotkey(vkey, &hk_trainer) {
                             let _ = args.SetHandled(true);
-                            let h = {
-                                let mut g = app_acc.lock().unwrap();
-                                g.pending_studio_tab = "aimtrainer".into();
-                                g.pending_studio_weapon.clear();
-                                g.main_hwnd
-                            };
-                            let _ = PostMessageW(Some(h), WM_APP_OPEN_STUDIO, WPARAM(0), LPARAM(0));
+                            post_json(&wv_acc, "action", &json!("toast:7-Gun Aim Trainer — Coming Soon"));
                         } else if vkey_matches_hotkey(vkey, &hk_mute) {
                             let _ = args.SetHandled(true);
                             let muted = !snap_acc
@@ -1221,7 +1215,7 @@ fn open_or_focus_studio(app: &SharedApp) {
 
     let hwnd = unsafe {
         let hinst = GetModuleHandleW(None).unwrap_or_default();
-        let title = w!("Dih Studio — 3D Skin Creator, Corsair RGB & Project Explorer");
+        let title = w!("Dih Studio — Corsair RGB & Project Explorer");
         let cls = w!("DihStudioWindowClass");
         let icon: HICON = LoadImageW(
             Some(hinst.into()),
@@ -1535,8 +1529,8 @@ fn run_smoke_test(app: &SharedApp, smoke_out: Option<String>, test_url: Option<S
         "injectionScriptBytes": inj_len,
         "overlayBundleGzipBytes": bundle::GZ_OVERLAY_BUNDLE.len(),
         "studioExists": bundle::resolve_embedded_studio_asset("studio.html").is_some(),
-        "threeJsExists": bundle::resolve_embedded_studio_asset("vendor/three/build/three.module.min.js").is_some(),
-        "aimTrainerExists": bundle::resolve_embedded_studio_asset("aimTrainer.js").is_some(),
+        "threeJsRemoved": bundle::resolve_embedded_studio_asset("vendor/three/build/three.module.min.js").is_none(),
+        "aimTrainerRemoved": bundle::resolve_embedded_studio_asset("aimTrainer.js").is_none(),
         "adblockBlockedTest": adblock::is_ad_or_tracker_url("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"),
         "adblockVenatusTest": adblock::is_ad_or_tracker_url("https://hb.vntsm.com/v4/live/vms/sites/deadshot.io/index.js"),
         "adblockAtmtdTest": adblock::is_ad_or_tracker_url("https://edge.atmtd.com/script.js"),
@@ -1583,7 +1577,7 @@ fn main() {
         corsair,
         main_hwnd: HWND::default(),
         studio_hwnd: None,
-        pending_studio_tab: "painter".to_string(),
+        pending_studio_tab: "corsair".to_string(),
         pending_studio_weapon: String::new(),
         dirty_skin_cache: false,
         is_fullscreen: false,
