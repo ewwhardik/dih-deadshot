@@ -1,0 +1,37 @@
+{
+  "name": "dih-client",
+  "version": "0.2.0",
+  "author": "ewwhardik (GitHub & Discord: ewwhardik)",
+  "homepage": "https://github.com/ewwhardik/dih-deadhshot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ewwhardik/dih-deadhshot.git"
+  },
+  "description": "Dih v0.2 — Minimalist High-Performance Deadshot.io Client with Native Rust+C+Win32 WebView2 Host, 10–15 MB Host RAM Budget, Uncapped FPS Telemetry, Corsair RGB, Custom 3D Skin Studio & 156+ Features",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node scripts/verify.js",
+    "build:native": "powershell -ExecutionPolicy Bypass -File scripts/build-native.ps1",
+    "dist-win": "electron-packager . Dih --platform=win32 --arch=x64 --out=dist --overwrite --no-asar"
+  },
+  "keywords": [
+    "deadshot.io",
+    "electron",
+    "client",
+    "skin-studio",
+    "corsair",
+    "uncapped-fps"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@ghostery/adblocker-electron": "^2.13.2",
+    "cross-fetch": "^4.1.0",
+    "discord-rpc": "^4.0.1",
+    "three": "^0.176.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^19.0.1",
+    "electron": "^38.7.2"
+  }
+}

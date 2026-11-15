@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="edgeFade" cx="50%" cy="50%" r="50%">
+      <stop offset="68%" stop-color="#0a0b0e" stop-opacity="0"/>
+      <stop offset="87%" stop-color="#0a0b0e" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#050608" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#edgeFade)"/>
+  <circle cx="512" cy="512" r="388" stroke="#d4d8df" stroke-opacity="0.28" stroke-width="2"/>
+  <line x1="120" y1="512" x2="480" y2="512" stroke="#d4d8df" stroke-opacity="0.7" stroke-width="1.5"/>
+  <line x1="544" y1="512" x2="904" y2="512" stroke="#d4d8df" stroke-opacity="0.7" stroke-width="1.5"/>
+  <line x1="512" y1="120" x2="512" y2="480" stroke="#d4d8df" stroke-opacity="0.7" stroke-width="1.5"/>
+  <line x1="512" y1="544" x2="512" y2="880" stroke="#d4d8df" stroke-opacity="0.7" stroke-width="1.5"/>
+  <!-- Mil-dot mildots -->
+  <line x1="498" y1="572" x2="526" y2="572" stroke="#9ea6b2" stroke-width="1.5"/>
+  <line x1="502" y1="622" x2="522" y2="622" stroke="#9ea6b2" stroke-width="1.5"/>
+  <line x1="498" y1="672" x2="526" y2="672" stroke="#9ea6b2" stroke-width="1.5"/>
+  <line x1="452" y1="502" x2="452" y2="522" stroke="#9ea6b2" stroke-width="1.5"/>
+  <line x1="572" y1="502" x2="572" y2="522" stroke="#9ea6b2" stroke-width="1.5"/>
+  <circle cx="512" cy="512" r="3" fill="#ffffff"/>
+</svg>

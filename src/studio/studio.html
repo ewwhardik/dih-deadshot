@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dih Studio — 3D Skin Creator, Corsair RGB & Project Explorer</title>
+  <link rel="stylesheet" href="./studio.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="studio-app">
+    <header class="studio-topbar">
+      <div class="topbar-brand">
+        <div class="logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#d4d8df" stroke-width="1.8"/>
+            <line x1="2" y1="12" x2="7.5" y2="12" stroke="#f2f4f7" stroke-width="1.6" stroke-linecap="round"/>
+            <line x1="16.5" y1="12" x2="22" y2="12" stroke="#f2f4f7" stroke-width="1.6" stroke-linecap="round"/>
+            <line x1="12" y1="2" x2="12" y2="7.5" stroke="#f2f4f7" stroke-width="1.6" stroke-linecap="round"/>
+            <line x1="12" y1="16.5" x2="12" y2="22" stroke="#f2f4f7" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="2" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">DIH STUDIO <span class="mono muted" style="font-size:10px;font-weight:500;">by ewwhardik</span></div>
+          <div class="brand-sub" id="hwBanner">Initializing hardware telemetry...</div>
+        </div>
+      </div>
+
+      <nav class="topbar-tabs">
+        <button class="tab-btn active" data-tab="painter">3D Gun Skin Studio</button>
+        <button class="tab-btn" data-tab="corsair">Corsair &amp; Virtual RGB</button>
+        <button class="tab-btn" data-tab="explorer">Deadshot RE Explorer</button>
+      </nav>
+
+      <div class="topbar-actions">
+        <button class="btn" id="btnOpenFolder">Skins Folder</button>
+        <button class="btn primary" id="btnReloadGame">Reload Game Textures</button>
+      </div>
+    </header>
+
+    <!-- TAB 1: 3D GUN SKIN STUDIO -->
+    <main class="studio-view active" id="view-painter">
+      <aside class="studio-sidebar">
+        <div class="group-label">Weapon &amp; Base Texture</div>
+        <select class="select" id="weaponSelect"></select>
+        <select class="select" id="baseSkinSelect"></select>
+        <div class="row-gap">
+          <button class="btn flex-1" id="btnLoadBase">Load Base</button>
+          <button class="btn flex-1" id="btnToggleMask">UV Mask: ON</button>
+        </div>
+
+        <div class="group-label">2D Paint Tools</div>
+        <div class="tool-grid">
+          <button class="btn tool-btn active" data-tool="brush">Brush</button>
+          <button class="btn tool-btn" data-tool="airbrush">Airbrush</button>
+          <button class="btn tool-btn" data-tool="line">Line</button>
+          <button class="btn tool-btn" data-tool="fill">Tint All</button>
+          <button class="btn tool-btn" data-tool="eraser">Erase Base</button>
+          <button class="btn" id="btnUndo">Undo</button>
+        </div>
+
+        <div class="control-row">
+          <span>Primary</span>
+          <input type="color" class="color-pick" id="paintColorA" value="#d4d8df" />
+          <span>Secondary</span>
+          <input type="color" class="color-pick" id="paintColorB" value="#242830" />
+        </div>
+
+        <label class="slider-label">
+          <span>Brush Size <b class="mono" id="lblBrushSize">26px</b></span>
+          <input type="range" id="rngBrushSize" min="2" max="120" value="26" />
+        </label>
+        <label class="slider-label">
+          <span>Opacity <b class="mono" id="lblBrushAlpha">100%</b></span>
+          <input type="range" id="rngBrushAlpha" min="5" max="100" value="100" />
+        </label>
+
+        <div class="group-label">Procedural Generators</div>
+        <div class="tool-grid">
+          <button class="btn" data-gen="topo">Slate Topo</button>
+          <button class="btn" data-gen="carbon">Carbon Weave</button>
+          <button class="btn" data-gen="shard">Geo Shard</button>
+          <button class="btn" data-gen="tiger">Tiger Stripe</button>
+          <button class="btn" data-gen="fade">Metallic Fade</button>
+          <button class="btn" data-gen="wear">Edge Wear</button>
+        </div>
+
+        <div class="group-label">Color Grading</div>
+        <label class="slider-label">
+          <span>Hue Shift <b class="mono" id="lblHue">0°</b></span>
+          <input type="range" id="rngHue" min="-180" max="180" value="0" />
+        </label>
+        <label class="slider-label">
+          <span>Saturation <b class="mono" id="lblSat">100%</b></span>
+          <input type="range" id="rngSat" min="0" max="220" value="100" />
+        </label>
+        <label class="slider-label">
+          <span>Contrast <b class="mono" id="lblCon">100%</b></span>
+          <input type="range" id="rngCon" min="50" max="180" value="100" />
+        </label>
+        <button class="btn" id="btnApplyGrade">Bake Color Grade to Canvas</button>
+
+        <div class="group-label">Decal / Typography Stamp</div>
+        <input class="input" id="txtStamp" placeholder="Clan tag or serial (e.g. DIH-01)" value="DIH-01" />
+        <button class="btn" id="btnStampCenter">Stamp Center UV</button>
+      </aside>
+
+      <section class="studio-center">
+        <div class="viewport-split">
+          <div class="pane">
+            <div class="pane-head">
+              <span>2D UV ATLAS CANVAS (1024×1024)</span>
+              <span class="mono muted" id="uvStatus">Loading base UV...</span>
+            </div>
+            <div class="canvas-stage" id="uvStage">
+              <div class="uv-pair">
+                <canvas id="uvCanvas" width="1024" height="1024"></canvas>
+                <canvas id="maskCanvas" width="1024" height="1024"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-head">
+              <span>LIVE 3D WEAPON PREVIEW</span>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <label class="check-inline"><input type="checkbox" id="chkAutoSpin" checked /> Spin</label>
+                <label class="check-inline"><input type="checkbox" id="chkFlipY" /> FlipY</label>
+              </div>
+            </div>
+            <div class="gl-stage" id="glStage">
+              <div class="gl-caption mono" id="glCaption">Loading 3D geometry...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="studio-vault">
+        <div class="group-label">Export &amp; Equip</div>
+        <input class="input" id="skinNameInput" placeholder="Skin name..." value="Obsidian-Prototype" />
+        <button class="btn" id="btnSaveSkin">Save .WEBP to Library</button>
+        <button class="btn primary" id="btnSaveEquip">Save &amp; Equip on Gun</button>
+        <button class="btn" id="btnImportFile">Import .WEBP / .PNG</button>
+
+        <div class="group-label" style="margin-top:8px;">Custom Skins Vault</div>
+        <div class="vault-list" id="vaultList"></div>
+      </aside>
+    </main>
+
+    <!-- TAB 2: CORSAIR RGB & VIRTUAL K70 LAB -->
+    <main class="studio-view" id="view-corsair">
+      <div class="corsair-lab">
+        <div class="card-block row-between">
+          <div>
+            <div class="panel-title" id="corsairBanner">Scanning Corsair &amp; OpenRGB status...</div>
+            <div class="panel-sub mono" id="corsairMeta">--</div>
+          </div>
+          <div class="row-gap">
+            <button class="btn" id="btnCorsairRescan">Rescan USB</button>
+            <button class="btn" id="btnConnectOpenRgb">Connect OpenRGB (6742)</button>
+            <button class="btn primary" id="btnPairWebHid">Link WebHID (0x1B1C)</button>
+          </div>
+        </div>
+
+        <div class="card-block">
+          <div class="pane-head" style="padding:0 0 10px;">
+            <span>REAL-TIME VIRTUAL CORSAIR K70 + CHASSIS RGB STRIP</span>
+            <div class="row-gap">
+              <button class="btn" data-pulse="fire">Test Shot</button>
+              <button class="btn" data-pulse="ads">Toggle ADS</button>
+              <button class="btn" data-pulse="reload">Test Reload</button>
+              <button class="btn" data-pulse="kill">Test Kill Flash</button>
+            </div>
+          </div>
+          <div class="kbd-chassis">
+            <div class="kbd-grid" id="virtualKbd"></div>
+            <div class="strip-bar" id="virtualStrip"></div>
+          </div>
+        </div>
+
+        <div class="corsair-controls-grid">
+          <div class="card-block">
+            <div class="group-label">Lighting Mode</div>
+            <select class="select" id="corsairModeSelect">
+              <option value="reactive_tactical">Reactive Tactical (Fire + ADS + Reload)</option>
+              <option value="fps_thermal">FPS Thermal Gradient</option>
+              <option value="ping_health">Ping Health Aura</option>
+              <option value="breathing">Obsidian Breathing</option>
+              <option value="spectrum">Precision Spectrum Wave</option>
+              <option value="ads_focus">ADS Focus Dimmer</option>
+              <option value="reload_sweep">Reload Sweep Wave</option>
+              <option value="keymap_zones">Tactical Keymap Zones</option>
+              <option value="audio_pulse">Rhythm Audio Pulse</option>
+              <option value="static_slate">Static Minimalist Slate</option>
+            </select>
+            <label class="slider-label" style="margin-top:10px;">
+              <span>Brightness <b class="mono" id="lblRgbBright">85%</b></span>
+              <input type="range" id="rngRgbBright" min="5" max="100" value="85" />
+            </label>
+          </div>
+
+          <div class="card-block">
+            <div class="group-label">Detected Hardware &amp; iCUE Guide</div>
+            <div class="panel-sub" id="corsairHwList">No physical Corsair HID devices detected yet. Virtual visualizer always reflects active RGB output. For iCUE keyboards/fans, enable OpenRGB SDK Server or pair via WebHID (VID 0x1B1C).</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 3: REVERSE-ENGINEERED DEADSHOT.IO EXPLORER -->
+    <main class="studio-view" id="view-explorer">
+      <div class="explorer-layout">
+        <div class="card-block">
+          <div class="row-between">
+            <div>
+              <div class="panel-title">Deadshot.io Reverse-Engineered Architecture</div>
+              <div class="panel-sub mono">index.html -> final.pkg (64B trailer stripped -> AES-256-GCM ImDajT key -> gzip JS) -> 36-slot dsio:settings:2 &amp; Three.js Draco Assets</div>
+            </div>
+            <input class="input" id="explorerSearch" placeholder="Filter assets, URLs, maps, keys..." style="width:260px;" />
+          </div>
+        </div>
+
+        <div class="explorer-grid" id="explorerContent"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="studio-toast" id="studioToast"></div>
+  <script type="module" src="./studio.js"></script>
+</body>
+</html>

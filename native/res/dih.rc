@@ -1,0 +1,27 @@
+// Win32 Application Icon & VersionInfo Reference
+1 ICON "../../assets/dih-icon.ico"
+
+1 VERSIONINFO
+FILEVERSION     2,0,0,0
+PRODUCTVERSION  2,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "ewwhardik"
+      VALUE "FileDescription", "Dih - Native Uncapped Deadshot.io Client"
+      VALUE "FileVersion", "2.0.0.0"
+      VALUE "InternalName", "Dih"
+      VALUE "LegalCopyright", "ewwhardik (GitHub & Discord: ewwhardik)"
+      VALUE "OriginalFilename", "Dih.exe"
+      VALUE "ProductName", "Dih Client"
+      VALUE "ProductVersion", "2.0.0.0"
+      VALUE "Comments", "Minimalist High-FPS Deadshot.io Client | GitHub: ewwhardik | Discord: ewwhardik"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 1200
+  END
+END

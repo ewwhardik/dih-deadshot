@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="edgeFade" cx="50%" cy="50%" r="50%">
+      <stop offset="68%" stop-color="#0a0b0e" stop-opacity="0"/>
+      <stop offset="86%" stop-color="#0a0b0e" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#050608" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#edgeFade)"/>
+  <circle cx="512" cy="512" r="390" stroke="#d4d8df" stroke-opacity="0.24" stroke-width="2"/>
+  <line x1="80" y1="512" x2="466" y2="512" stroke="#e6e8ec" stroke-opacity="0.72" stroke-width="2"/>
+  <line x1="558" y1="512" x2="944" y2="512" stroke="#e6e8ec" stroke-opacity="0.72" stroke-width="2"/>
+  <line x1="512" y1="80" x2="512" y2="466" stroke="#e6e8ec" stroke-opacity="0.72" stroke-width="2"/>
+  <line x1="512" y1="558" x2="512" y2="944" stroke="#e6e8ec" stroke-opacity="0.72" stroke-width="2"/>
+  <circle cx="512" cy="512" r="3" fill="#ffffff"/>
+</svg>

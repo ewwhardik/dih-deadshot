@@ -1,0 +1,55 @@
+[package]
+name = "dih"
+version = "0.2.0"
+edition = "2021"
+authors = ["ewwhardik"]
+description = "Dih - Native Uncapped Deadshot.io Client (GitHub & Discord: ewwhardik)"
+
+[[bin]]
+name = "Dih"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+[dependencies]
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+webview2-com = "0.39.1"
+windows-core = "0.62"
+
+[dependencies.windows]
+version = "0.62"
+features = [
+  "Win32_Devices_DeviceAndDriverInstallation",
+  "Win32_Devices_HumanInterfaceDevice",
+  "Win32_Foundation",
+  "Win32_Globalization",
+  "Win32_Graphics_Dxgi",
+  "Win32_Graphics_Gdi",
+  "Win32_Media",
+  "Win32_Networking_WinHttp",
+  "Win32_Security",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Com",
+  "Win32_System_DataExchange",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Memory",
+  "Win32_System_Ole",
+  "Win32_System_Power",
+  "Win32_System_ProcessStatus",
+  "Win32_System_SystemInformation",
+  "Win32_System_Threading",
+  "Win32_System_Variant",
+  "Win32_System_WinRT",
+  "Win32_UI_Controls_Dialogs",
+  "Win32_UI_HiDpi",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+]

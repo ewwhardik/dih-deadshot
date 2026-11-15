@@ -1,0 +1,9 @@
+node_modules/
+native/target/
+dist/
+*.log
+*.tmp
+dih-profile-*.json
+dih-diagnostics-*.json
+.DS_Store
+Thumbs.db
