@@ -19,12 +19,13 @@
         </div>
       </a>
       <nav class="nav-links">
-        <a href="#ui-showcase">Bento Glass UI</a>
-        <a href="#benchmarks">Chrome vs Dih</a>
+        <a href="#ui-showcase">Bento UI</a>
+        <a href="#guide">Play Guide</a>
+        <a href="#benchmarks">Benchmarks</a>
         <a href="#analyzer">PC Analyzer</a>
-        <a href="#playground">Live Previews</a>
-        <a href="#rgb-skins">RGB & Skins</a>
-        <a href="#features">All Features</a>
+        <a href="#playground">Previews</a>
+        <a href="#rgb-skins">RGB &amp; Skins</a>
+        <a href="#features">Features</a>
         <a href="#downloads" class="btn primary small">Download v0.4</a>
       </nav>
     </div>
@@ -44,6 +45,7 @@
         </p>
         <div class="hero-cta">
           <a href="#downloads" class="btn primary">Download v0.4 (Win / Mac / Linux)</a>
+          <a href="#guide" class="btn">Play Guide &amp; Shortcuts</a>
           <a href="#ui-showcase" class="btn">Preview v0.4 Glass UI</a>
           <a href="https://github.com/ewwhardik/dih-deadshot" target="_blank" rel="noopener" class="btn">GitHub Repo</a>
         </div>
@@ -115,6 +117,174 @@
             <span>SKIN PACKS &amp; STUDIO • .FRAG SHADER BAKER</span>
             <span>ROYAL FLUSH • CUSTOM 7-GUN PACK BUILDER</span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Playing Information, Setup & Shortcut Keys Guide -->
+    <section id="guide" class="section container">
+      <div class="section-head">
+        <span class="kicker mono">PLAYING GUIDE • SHORTCUTS • WORKFLOWS</span>
+        <h2>How to Install, Play &amp; Master Every Shortcut</h2>
+        <p class="sub">
+          Everything you need to run Dih Client cleanly from first boot to ranked play — default keybinds,
+          Minimal vs Complete HUD modes, 7-Gun Aim Trainer controls, GLSL shader skin baking, and layout customization.
+        </p>
+      </div>
+
+      <!-- 3-Step Quick Start -->
+      <div class="grid-3">
+        <div class="card guide-card">
+          <span class="guide-step mono">STEP 01 • INSTALL &amp; LAUNCH</span>
+          <h3>Platform Setup</h3>
+          <ul class="guide-list">
+            <li><strong>Windows (975 KB Native):</strong> Extract <code>Dih-Client-v0.4-win-x64.zip</code> keeping <code>Dih.exe</code> and <code>WebView2Loader.dll</code> in the same folder, then run <code>Dih.exe</code> (uses built-in Windows 10/11 Edge WebView2).</li>
+            <li><strong>macOS (ARM64 / x64):</strong> Unzip into Applications. If macOS Gatekeeper warns on unsigned bundles, run <code>xattr -cr /Applications/Dih.app</code> once in Terminal.</li>
+            <li><strong>Linux (x64):</strong> Extract <code>tar -xzf Dih-Client-0.4.0-linux-x64.tar.gz</code> and launch <code>./dih-client</code> cleanly with executable bits intact.</li>
+          </ul>
+        </div>
+
+        <div class="card guide-card">
+          <span class="guide-step mono">STEP 02 • AUTO-TUNE &amp; LOBBY</span>
+          <h3>First Boot &amp; Menu Access</h3>
+          <ul class="guide-list">
+            <li><strong>Boot Hardware Analyzer:</strong> Scores your CPU, GPU, and monitor refresh rate (<code>PowerScore</code>) to auto-configure render scale, graphics backend (<code>D3D11</code>/<code>Metal</code>/<code>Vulkan</code>), and frame pacing.</li>
+            <li><strong>Open Bento Panel:</strong> Press <kbd class="keycap">RightShift</kbd> or <kbd class="keycap">O</kbd> at any time to open the Titanium Glass Command Center (<kbd class="keycap">Esc</kbd> closes it).</li>
+            <li><strong>Drag &amp; Customize HUD:</strong> While Command Center is open, drag the Telemetry, Keystrokes, Watermark, K/D Card, or Stopwatch widgets anywhere on screen.</li>
+          </ul>
+        </div>
+
+        <div class="card guide-card">
+          <span class="guide-step mono">STEP 03 • MATCH PLAY &amp; PRIVACY</span>
+          <h3>In-Match Tips &amp; Rebinding</h3>
+          <ul class="guide-list">
+            <li><strong>Zero-Leak Adblocker:</strong> Blocks Venatus, Atmtd, and ad trackers at the network layer automatically with zero setup.</li>
+            <li><strong>Auto-Join Match Chat:</strong> Broadcasts your configured greeting (default <code>"Dih User Joined"</code>) automatically on lobby-to-match transitions (toggle or customize in Command Center).</li>
+            <li><strong>Rebind Any Shortcut:</strong> Open <kbd class="keycap">RightShift</kbd> → search <code>"hotkey"</code> to rebind any key below; press <kbd class="keycap">F9</kbd> anytime for instant clip/stream Clean Mode.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Complete Keyboard Shortcuts Reference Table -->
+      <div class="card table-wrap" style="margin-top: 18px;">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th>Default Key</th>
+              <th class="col-dih">Action</th>
+              <th>What It Does In-Game / Client</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd class="keycap">RightShift</kbd> / <kbd class="keycap">O</kbd></td>
+              <td class="col-dih"><strong>Toggle Command Center</strong></td>
+              <td>Opens or closes the Titanium Grey-White Bento Glass panel (<kbd class="keycap">Esc</kbd> also closes when open).</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">Insert</kbd></td>
+              <td class="col-dih"><strong>Open 7-Gun Aim Trainer</strong></td>
+              <td>Launches the standalone ballistic Aim Trainer window calibrated to Deadshot weapons.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F7</kbd></td>
+              <td class="col-dih"><strong>Open 3D Skin &amp; Shader Studio</strong></td>
+              <td>Opens the 3D Skin Painter, <code>deadshot.io/skineditor/</code> Royal Flush <code>.frag</code> baker, Corsair RGB lab &amp; RE Explorer.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F1</kbd></td>
+              <td class="col-dih"><strong>Toggle Top-Right Watermark</strong></td>
+              <td>Shows or hides the Dih hardware badge in the top-right corner.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F2</kbd></td>
+              <td class="col-dih"><strong>Toggle Custom Crosshair</strong></td>
+              <td>Toggles your custom SVG precision reticle overlay on or off without touching game files.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F3</kbd></td>
+              <td class="col-dih"><strong>Toggle Keystrokes Overlay</strong></td>
+              <td>Shows or hides the live WASD / Space / ADS / Click overlay HUD.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F4</kbd></td>
+              <td class="col-dih"><strong>Toggle Telemetry HUD</strong></td>
+              <td>Shows or hides the FPS, 1% Low, frametime, GPU, RAM, and ping readout.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F5</kbd></td>
+              <td class="col-dih"><strong>Quick Reload Game &amp; Textures</strong></td>
+              <td>Hard-reloads <code>deadshot.io</code> cleanly so newly baked custom skins or shader packs take effect right away.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F6</kbd></td>
+              <td class="col-dih"><strong>Switch Minimal ↔ Complete HUD</strong></td>
+              <td>Cycles Telemetry HUD between compact esports readout (FPS/Ping) and full hardware/GPU telemetry.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F8</kbd></td>
+              <td class="col-dih"><strong>Master Mute Client</strong></td>
+              <td>Instantly mutes or unmutes all game audio cleanly from the host layer.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F9</kbd></td>
+              <td class="col-dih"><strong>Clean Mode (Hide All HUD)</strong></td>
+              <td>Hides or restores every Dih overlay simultaneously for unobstructed gameplay, screenshots, or tournaments.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F10</kbd></td>
+              <td class="col-dih"><strong>Capture Screenshot</strong></td>
+              <td>Saves a PNG screenshot directly to <code>%AppData%\dih-client\screenshots\</code> with toast path confirmation.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">F11</kbd></td>
+              <td class="col-dih"><strong>Toggle Borderless Fullscreen</strong></td>
+              <td>Switches cleanly between borderless fullscreen and windowed mode.</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">B</kbd></td>
+              <td class="col-dih"><strong>Toggle Match Stopwatch</strong></td>
+              <td>Starts or pauses the centisecond HUD timer widget (when Stopwatch is enabled in HUD settings).</td>
+            </tr>
+            <tr>
+              <td><kbd class="keycap">Ctrl</kbd> + <kbd class="keycap">Shift</kbd> + <kbd class="keycap">F12</kbd></td>
+              <td class="col-dih"><strong>DevTools (Electron Build)</strong></td>
+              <td>Opens Chromium DevTools in the portable Electron build for debugging overlays.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tool Deep-Dives: 7-Gun Aim Trainer & Skin Studio Usage -->
+      <div class="grid-2" style="margin-top: 18px;">
+        <div class="card guide-card">
+          <span class="guide-step mono">AIM TRAINER GUIDE • PRESS INSERT</span>
+          <h3>7-Gun Ballistic Trainer &amp; Controls</h3>
+          <p class="muted">
+            Click inside the arena to lock your pointer, hold <kbd class="keycap">Left-Click</kbd> to fire (or tap rhythmically on DMR/Pistol),
+            hold <kbd class="keycap">Right-Click</kbd> for calibrated ADS Zoom, press <kbd class="keycap">R</kbd> to reload, and <kbd class="keycap">Esc</kbd> to pause.
+            Enable <strong>Sync Client Crosshair</strong> to train with your exact in-match reticle across 6 drills.
+          </p>
+          <div class="weapon-pills mono">
+            <div class="weapon-pill"><strong>AR-15</strong><span>650 RPM • 92ms • 30rd</span></div>
+            <div class="weapon-pill"><strong>Vector SMG</strong><span>950 RPM • 63ms • 32rd</span></div>
+            <div class="weapon-pill"><strong>AWP Sniper</strong><span>46 RPM • 180 Head Dmg</span></div>
+            <div class="weapon-pill"><strong>Pump Shotgun</strong><span>75 RPM • 8 Pellets • 6rd</span></div>
+            <div class="weapon-pill"><strong>DMR Marksman</strong><span>300 RPM • 200ms Reset</span></div>
+            <div class="weapon-pill"><strong>Tactical Pistol</strong><span>400 RPM • 150ms Semi</span></div>
+            <div class="weapon-pill"><strong>LMG Heavy</strong><span>560 RPM • 60rd Hold</span></div>
+          </div>
+        </div>
+
+        <div class="card guide-card">
+          <span class="guide-step mono">SKIN &amp; SHADER STUDIO GUIDE • PRESS F7</span>
+          <h3>Royal Flush <code>.frag</code> Baker &amp; Custom Skins</h3>
+          <ul class="guide-list">
+            <li><strong>Step 1 — Pick Weapon &amp; Shader:</strong> Press <kbd class="keycap">F7</kbd> → select any weapon texture slot → pick <strong>Royal Flush</strong> (built-in <code>royalflushskin.frag</code>), Obsidian Carbon, Sovereign Emerald, or click <strong>Import .frag Shader</strong> to load custom code from <code>deadshot.io/skineditor/</code>.</li>
+            <li><strong>Step 2 — Tune Palette &amp; Wear:</strong> Adjust Primary, Secondary, Trim, and Accent colors or procedural Tiger/Carbon/Edge-Wear passes and stamp a custom clan serial onto the 512×512 UV map.</li>
+            <li><strong>Step 3 — Save &amp; Refresh Match:</strong> Click <strong>Save to Vault</strong> to activate local interception (zero network leaks to external CDNs), then press <kbd class="keycap">F5</kbd> in-game to apply your new weapon finish immediately.</li>
+            <li><strong>Bonus Controls:</strong> Switch inside Studio tabs between <strong>3D Gun Skin Studio</strong>, <strong>7-Gun Aim Trainer</strong>, <strong>Corsair &amp; Virtual RGB</strong> (OpenRGB TCP), and <strong>Deadshot RE Explorer</strong>.</li>
+          </ul>
         </div>
       </div>
     </section>
