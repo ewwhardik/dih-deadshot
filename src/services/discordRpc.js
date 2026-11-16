@@ -8,7 +8,7 @@ const DEFAULT_DISCORD_APP_ID = "1571744646219169873";
 
 const RPC_BUTTONS = [
   { label: "Download Dih", url: "https://github.com/ewwhardik/dih-deadshot/releases/latest" },
-  { label: "Live Showcase", url: "https://ewwhardik.github.io/dih-deadshot/" },
+  { label: "Join Discord", url: "https://discord.gg/KkCjEdv9Jv" },
 ];
 
 class DiscordRpcService {

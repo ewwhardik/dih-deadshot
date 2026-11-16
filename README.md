@@ -3,6 +3,7 @@
   <h1>Dih Client v0.4.1 (<code>dih-deadshot</code>)</h1>
   <p><strong>Sub-1 MB Single-File Native Deadshot.io Client — Fast Zero-Blur Titanium Grey-White Bento UI, Live Discord Rich Presence, Royal Flush GLSL Skin Baker, Corsair RGB &amp; Cross-Platform Builds (Windows / macOS / Linux)</strong></p>
   <p>
+    <a href="https://discord.gg/KkCjEdv9Jv"><strong>Join Discord</strong></a> •
     <a href="https://ewwhardik.github.io/dih-deadshot/"><strong>Live Showcase &amp; Feature Explorer</strong></a> •
     <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4.1"><strong>Download v0.4.1 (Win / Mac / Linux)</strong></a> •
     <a href="LICENSE"><strong>Proprietary License</strong></a>
@@ -67,6 +68,8 @@ Chrome spawns 20+ helper processes, gets throttled with Windows 11 Efficiency Mo
 | **Corsair / OpenRGB Integration** | **Native USB HID (`VID_1B1C`) + OpenRGB TCP (`6742`)** | None | None |
 
 ---
+
+> 💬 **Join the community:** https://discord.gg/KkCjEdv9Jv — downloads, support, mod tools & news.
 
 ## Cross-Platform Downloads (`v0.4.1`)
 

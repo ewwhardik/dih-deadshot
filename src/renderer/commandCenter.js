@@ -659,6 +659,10 @@ DIH_NS.createCommandCenter = function createCommandCenter({
           }, "Showcase Site"),
           el("button", {
             className: "dih-btn",
+            onClick: () => triggerAction("openExternal:https://discord.gg/KkCjEdv9Jv"),
+          }, "Join Discord"),
+          el("button", {
+            className: "dih-btn",
             onClick: async () => {
               await navigator.clipboard?.writeText("ewwhardik");
               toast("Copied Discord username: ewwhardik");
