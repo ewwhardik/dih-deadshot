@@ -3,6 +3,7 @@
 mod adblock;
 mod bundle;
 mod corsair;
+mod discord_rpc;
 mod ffi;
 mod hw_analyzer;
 mod inflate;
@@ -10,6 +11,7 @@ mod settings;
 mod skins;
 
 use crate::corsair::CorsairService;
+use crate::discord_rpc::DiscordRpcService;
 use crate::settings::SettingsStore;
 use crate::skins::SkinManager;
 
@@ -73,6 +75,7 @@ struct AppState {
     settings_snap: Arc<RwLock<Value>>,
     skins: Arc<SkinManager>,
     corsair: Arc<CorsairService>,
+    discord: Arc<DiscordRpcService>,
     main_hwnd: HWND,
     studio_hwnd: Option<HWND>,
     pending_studio_tab: String,
@@ -466,6 +469,14 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
                         g.corsair.set_config(c.clone());
                     }
                 }
+                if path == "window.discordRpcEnabled"
+                    || path == "window.discordPrivacyMode"
+                    || path == "window.discordClientId"
+                {
+                    if let Some(w) = u.get("window") {
+                        g.discord.set_config(w);
+                    }
+                }
                 if path.starts_with("skins") {
                     g.skins.clear_mem_cache();
                     g.dirty_skin_cache = true;
@@ -483,6 +494,11 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
                 let u = g.settings.update_settings(&patch);
                 if let Some(c) = u.get("corsair") {
                     g.corsair.set_config(c.clone());
+                }
+                if patch.get("window").is_some() {
+                    if let Some(w) = u.get("window") {
+                        g.discord.set_config(w);
+                    }
                 }
                 if patch.get("skins").is_some() {
                     g.skins.clear_mem_cache();
@@ -677,7 +693,7 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
             let g = app.lock().unwrap();
             let diag = json!({
                 "client": "Dih Native Client (Rust + Win32 + WebView2)",
-                "version": "0.4.0",
+                "version": "0.4.1",
                 "author": "ewwhardik (GitHub & Discord: ewwhardik)",
                 "hardware": ffi::get_static_hardware(),
                 "liveMetrics": ffi::get_live_metrics(),
@@ -737,6 +753,8 @@ fn handle_game_rpc(app: &SharedApp, method: &str, params: &Value) -> Result<Valu
             let port = params.get("port").and_then(|v| v.as_u64()).unwrap_or(6742) as u16;
             Ok(app.lock().unwrap().corsair.connect_openrgb(host, port))
         }
+        "getDiscordStatus" => Ok(app.lock().unwrap().discord.get_status()),
+        "reconnectDiscordRpc" => Ok(app.lock().unwrap().discord.reconnect()),
         _ => Err(format!("Unknown RPC method: {method}")),
     }
 }
@@ -1062,6 +1080,8 @@ fn attach_game_webview(hwnd: HWND, env: &ICoreWebView2Environment, app: &SharedA
                         } else if kind == "notify" {
                             if method == "corsairUpdateTelemetry" {
                                 app_msg.lock().unwrap().corsair.update_telemetry(&params);
+                            } else if method == "updateDiscordState" {
+                                app_msg.lock().unwrap().discord.update_state(&params);
                             }
                         }
                     }
@@ -1523,7 +1543,7 @@ fn run_smoke_test(app: &SharedApp, smoke_out: Option<String>, test_url: Option<S
     let report = json!({
         "ok": true,
         "engine": "Dih Native Rust + C + Win32 + WebView2",
-        "version": "0.4.0",
+        "version": "0.4.1",
         "author": "ewwhardik",
         "featureCount": feat_count,
         "injectionScriptBytes": inj_len,
@@ -1564,8 +1584,10 @@ fn main() {
     let settings = SettingsStore::load(&user_data_dir, &catalog);
     let current = settings.get_all();
     let corsair_cfg = current.get("corsair").cloned().unwrap_or(Value::Null);
+    let win_cfg = current.get("window").cloned().unwrap_or(Value::Null);
     let skins = Arc::new(SkinManager::new(&user_data_dir, catalog.clone()));
     let corsair = Arc::new(CorsairService::new(corsair_cfg));
+    let discord = DiscordRpcService::new(&win_cfg);
     let settings_snap = Arc::new(RwLock::new(current.clone()));
 
     let app = Arc::new(Mutex::new(AppState {
@@ -1575,6 +1597,7 @@ fn main() {
         settings_snap,
         skins: Arc::clone(&skins),
         corsair,
+        discord,
         main_hwnd: HWND::default(),
         studio_hwnd: None,
         pending_studio_tab: "corsair".to_string(),

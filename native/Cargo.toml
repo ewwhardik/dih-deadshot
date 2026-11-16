@@ -1,6 +1,6 @@
 [package]
 name = "dih"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["ewwhardik"]
 license = "UNLICENSED"
@@ -40,6 +40,7 @@ features = [
   "Win32_System_Com",
   "Win32_System_DataExchange",
   "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_IO",
   "Win32_System_LibraryLoader",
   "Win32_System_Memory",
   "Win32_System_Ole",

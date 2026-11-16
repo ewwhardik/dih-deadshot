@@ -15,6 +15,7 @@ const vm = require("vm");
 const { execFileSync, spawn } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
+const EXPECTED_VERSION = require("../package.json").version;
 
 const { DEFAULT_SETTINGS, THEME_PRESETS } = require("../src/data/defaultSettings");
 const {
@@ -69,7 +70,8 @@ function testFeatureRegistryAndCatalog() {
   const docsMatch = docsDataSrc.match(/window\.DIH_DOCS_DATA\s*=\s*(\{[\s\S]*\});/);
   assert(docsMatch, "docs/features-data.js must define window.DIH_DOCS_DATA");
   const docsData = JSON.parse(docsMatch[1]);
-  assert.strictEqual(docsData.version, "0.4.0", `Expected docs version 0.4.0, got ${docsData.version}`);
+  assert.strictEqual(fs.readFileSync(path.join(ROOT, "version.txt"), "utf8").trim(), EXPECTED_VERSION, "version.txt out of sync with package.json");
+  assert.strictEqual(docsData.version, EXPECTED_VERSION, `Expected docs version ${EXPECTED_VERSION}, got ${docsData.version}`);
   assert.strictEqual(docsData.featureCount, FEATURE_REGISTRY.length, "docs/features-data.js out of sync (run npm run sync-docs)");
   assert.strictEqual(docsData.features?.length, FEATURE_REGISTRY.length, "docs/features-data.js features array length mismatch");
   const licenseSrc = fs.readFileSync(path.join(ROOT, "LICENSE"), "utf8");
@@ -469,7 +471,7 @@ function testNativeDistribution(tmpDir) {
   );
   const report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
   assert.strictEqual(report.ok, true);
-  assert.strictEqual(report.version, "0.4.0", `Native version mismatch: ${report.version}`);
+  assert.strictEqual(report.version, EXPECTED_VERSION, `Native version mismatch: ${report.version}`);
   assert(report.featureCount >= 190, `Native catalog missing features: ${report.featureCount}`);
   const exeBytes = fs.statSync(exePath).size;
   assert(exeBytes < 1_000_000, `Expected native Dih.exe < 1 MB (1,000,000 bytes), got ${exeBytes}`);

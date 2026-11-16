@@ -28,6 +28,8 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     writeDeadshotSetting,
     encodeCrosshairCode,
     decodeCrosshairCode,
+    createDarkSelect,
+    closeDarkSelects,
   } = DIH_NS.utils;
 
   const api = getHostApi();
@@ -161,7 +163,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     { id: "corsair", label: "Corsair RGB", tag: "HID", icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/>' },
     { id: "crosshair", label: "HUD & Aim", tag: "SVG", icon: '<circle cx="12" cy="12" r="7"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>' },
     { id: "tools", label: "Visuals & Sync", tag: "PRO", icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/>' },
-    { id: "theme", label: "Settings", tag: "v0.4", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.79 1 1.44 1H21a2 2 0 1 1 0 4h-.09c-.65 0-1.18.4-1.51 1z"/>' },
+    { id: "theme", label: "Settings", tag: "0.4.1", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.79 1 1.44 1H21a2 2 0 1 1 0 4h-.09c-.65 0-1.18.4-1.51 1z"/>' },
   ];
 
   let activeTab = "overview";
@@ -536,10 +538,11 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function makeSelectCard(title, desc, dotPath, options, asNumber = false, stacked = false) {
-    const sel = el("select", { className: "dih-select" }, options.map((o) =>
-      el("option", { value: o.value }, o.label)
-    ));
-    sel.addEventListener("change", () => updateSetting(dotPath, asNumber ? Number(sel.value) : sel.value));
+    const sel = createDarkSelect(shadowRoot, options, {
+      asNumber,
+      value: String(getPath(getSettings(), dotPath) ?? ""),
+      onChange: (val) => updateSetting(dotPath, val === "" ? (asNumber ? null : "") : asNumber ? Number(val) : val),
+    });
     bindSync((s) => {
       if (document.activeElement !== sel) {
         sel.value = String(getPath(s, dotPath) ?? "");
@@ -636,7 +639,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
         el("div", { style: { display: "flex", alignItems: "center", gap: "12px", minWidth: "0" } }, [
           el("div", { className: "dih-logo-mark" }, [makeBrandSvg(22)]),
           el("div", { style: { minWidth: "0" } }, [
-            el("div", { className: "dih-row-title" }, "Dih Client v0.4 — Overview & Credits"),
+            el("div", { className: "dih-row-title" }, "Dih Client v0.4.1 — Overview & Credits"),
             el("div", { className: "dih-row-desc" },
               `High-FPS (${isNative ? "Native Rust + Win32 + WebView2 Single-Binary <1 MB EXE" : "Electron Cross-Platform"}) minimalist Deadshot.io client with zero-leak adblocking, O(1) .webp skin swaps & shader packs, Minimal/Complete telemetry, F1–F9 HUD shortcuts, Auto-Join chat, Corsair RGB (3D Studio & Aim Trainer Coming Soon), and ${catalog.FEATURE_REGISTRY?.length || 196} controls.`
             ),
@@ -1391,12 +1394,12 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     const colPrimary = el("input", { type: "color", className: "dih-color", value: "#850611", title: "Primary Color" });
     const colSecondary = el("input", { type: "color", className: "dih-color", value: "#12151b", title: "Secondary Color" });
     const colTrim = el("input", { type: "color", className: "dih-color", value: "#d1a152", title: "Trim Color" });
-    const patSel = el("select", { className: "dih-select" }, [
-      el("option", { value: "carbon" }, "Carbon Weave"),
-      el("option", { value: "topo" }, "Topo Contours"),
-      el("option", { value: "tiger" }, "Tiger Stripe"),
-      el("option", { value: "suits" }, "Royal Flush GLSL Shader"),
-    ]);
+    const patSel = createDarkSelect(shadowRoot, [
+      { value: "carbon", label: "Carbon Weave" },
+      { value: "topo", label: "Topo Contours" },
+      { value: "tiger", label: "Tiger Stripe" },
+      { value: "suits", label: "Royal Flush GLSL Shader" },
+    ], { value: "carbon" });
     const fragUploadInp = el("input", { type: "file", accept: ".frag,.glsl,.fs,.txt", style: { display: "none" } });
     fragUploadInp.addEventListener("change", async () => {
       const f = fragUploadInp.files?.[0];
@@ -1476,28 +1479,28 @@ DIH_NS.createCommandCenter = function createCommandCenter({
     for (const [weaponId, weapon] of Object.entries(catalog.WEAPONS)) {
       const cfg = s.skins?.weapons?.[weaponId] || { mode: "default", officialId: "default", wear: 0, customFile: "" };
 
-      const modeSel = el("select", { className: "dih-select" }, [
-        el("option", { value: "default", selected: cfg.mode === "default" ? "selected" : null }, "Default Game Skin"),
-        el("option", { value: "official", selected: cfg.mode === "official" ? "selected" : null }, "Official Skin Pool"),
-        el("option", { value: "custom", selected: cfg.mode === "custom" ? "selected" : null }, "Custom Vault Skin"),
-      ]);
+      const modeSel = createDarkSelect(shadowRoot, [
+        { value: "default", label: "Default Game Skin" },
+        { value: "official", label: "Official Skin Pool" },
+        { value: "custom", label: "Custom Vault Skin" },
+      ], { value: cfg.mode || "default" });
 
-      const officialSel = el("select", { className: "dih-select", style: { flex: "1", minWidth: "0" } },
-        catalog.OFFICIAL_SKINS.map((sk) =>
-          el("option", { value: sk.id, selected: cfg.officialId === sk.id ? "selected" : null }, `${sk.name} (${sk.rarity})`)
-        )
+      const officialSel = createDarkSelect(
+        shadowRoot,
+        catalog.OFFICIAL_SKINS.map((sk) => ({ value: sk.id, label: `${sk.name} (${sk.rarity})` })),
+        { value: cfg.officialId || "default", style: { flex: "1", minWidth: "0" } }
       );
 
-      const wearSel = el("select", { className: "dih-select" },
-        [0, 1, 2, 3, 4].map((w) => el("option", { value: String(w), selected: Number(cfg.wear) === w ? "selected" : null }, `Wear ${w}`))
+      const wearSel = createDarkSelect(
+        shadowRoot,
+        [0, 1, 2, 3, 4].map((w) => ({ value: String(w), label: `Wear ${w}` })),
+        { value: String(cfg.wear ?? 0), asNumber: true }
       );
 
-      const customSel = el("select", { className: "dih-select", style: { flex: "1", minWidth: "0" } }, [
-        el("option", { value: "" }, customSkinsCache.length ? "-- Choose Custom Skin --" : "-- None yet (Bake Pack Above) --"),
-        ...customSkinsCache.map((cs) =>
-          el("option", { value: cs.fileName, selected: cfg.customFile === cs.fileName ? "selected" : null }, `${cs.name} [${cs.weaponId.toUpperCase()}]`)
-        ),
-      ]);
+      const customSel = createDarkSelect(shadowRoot, [
+        { value: "", label: customSkinsCache.length ? "-- Choose Custom Skin --" : "-- None yet (Bake Pack Above) --" },
+        ...customSkinsCache.map((cs) => ({ value: cs.fileName, label: `${cs.name} [${cs.weaponId.toUpperCase()}]` })),
+      ], { value: cfg.customFile || "", style: { flex: "1", minWidth: "0" } });
 
       const saveWeaponCfg = async (patch) => {
         const next = { ...cfg, ...patch };
@@ -1947,13 +1950,12 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       noir_slate: { filterEnabled: true, brightness: 98, contrast: 118, saturation: 45, hueRotate: 0, sepia: 0, grayscale: 70, sharpnessBoost: 15 },
     };
 
-    const presetSel = el("select", { className: "dih-select" }, [
-      el("option", { value: "clean", selected: s.visuals?.preset === "clean" ? "selected" : null }, "Clean Native"),
-      el("option", { value: "esports_vibrance", selected: s.visuals?.preset === "esports_vibrance" ? "selected" : null }, "Esports Contrast + Vibrance"),
-      el("option", { value: "crisp_clarity", selected: s.visuals?.preset === "crisp_clarity" ? "selected" : null }, "Crisp Clarity + Sharpen"),
-      el("option", { value: "noir_slate", selected: s.visuals?.preset === "noir_slate" ? "selected" : null }, "Monochrome Noir Slate"),
-    ]);
-    presetSel.value = s.visuals?.preset || "clean";
+    const presetSel = createDarkSelect(shadowRoot, [
+      { value: "clean", label: "Clean Native" },
+      { value: "esports_vibrance", label: "Esports Contrast + Vibrance" },
+      { value: "crisp_clarity", label: "Crisp Clarity + Sharpen" },
+      { value: "noir_slate", label: "Monochrome Noir Slate" },
+    ], { value: s.visuals?.preset || "clean" });
     presetSel.addEventListener("change", async () => {
       const pKey = presetSel.value;
       const pVals = VISUAL_PRESETS[pKey] || VISUAL_PRESETS.clean;
@@ -1989,6 +1991,8 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       makeToggleCard("Auto-Sync to Deadshot On Load", "Writes target FOV/scale/AA automatically into dsio:settings:2", "deadshotSync.autoSyncOnLoad"),
       makeSliderCard("Sync Target FOV", "deadshotSync.targetFov", 60, 120, 5, "°"),
       makeSelectCard("Sync Render Scale", "Deadshot canvas resolution factor", "deadshotSync.targetRenderScale", [
+        { value: "", label: "Game Default (Keep)" },
+        { value: "0.5", label: "0.50x (Max FPS)" },
         { value: "0.75", label: "0.75x (Low-End GPU Boost)" },
         { value: "1", label: "1.0x Native" },
         { value: "1.25", label: "1.25x Crisp" },
@@ -2012,7 +2016,54 @@ DIH_NS.createCommandCenter = function createCommandCenter({
       makeToggleCard("Borderless Maximized Window", "Maximizes cleanly to monitor work area without window frame", "window.borderlessMaximized"),
       makeSliderCard("Window Master Opacity", "window.opacity", 0.35, 1, 0.05, ""),
       makeToggleCard("Discord Rich Presence", "Shows active Dih session in Discord", "window.discordRpcEnabled"),
-      makeToggleCard("Discord Privacy Mode", "Hides weapon & skin details from Discord status", "window.discordPrivacyMode"),
+      makeToggleCard("Discord Privacy Mode", "Hides status text inside Discord", "window.discordPrivacyMode"),
+      (() => {
+        const rpcIdInp = el("input", {
+          className: "dih-input dih-mono",
+          value: s.window?.discordClientId || "",
+          placeholder: "Default: 1571744646219169873",
+          style: { width: "220px" },
+        });
+        const rpcStatus = el("div", { className: "dih-row-desc dih-mono", style: { marginTop: "3px" } }, "Checking Discord IPC...");
+        const refreshRpcStatus = async () => {
+          try {
+            const st = await api?.getDiscordStatus?.();
+            if (!st) return;
+            if (!st.enabled) {
+              rpcStatus.textContent = "RPC Disabled";
+            } else if (st.connected) {
+              rpcStatus.textContent = `Connected • Playing ${st.appName || "Dih deadshot.io"} • "${st.details}"`;
+            } else {
+              rpcStatus.textContent = st.lastError || "Waiting for Discord desktop...";
+            }
+          } catch {}
+        };
+        refreshRpcStatus();
+        bindSync((cur) => {
+          if (document.activeElement !== rpcIdInp) {
+            rpcIdInp.value = cur.window?.discordClientId || "";
+          }
+        });
+        const saveRpcBtn = el("button", {
+          className: "dih-btn primary",
+          onClick: async () => {
+            await updateSetting("window.discordClientId", rpcIdInp.value.trim());
+            await api?.reconnectDiscordRpc?.();
+            setTimeout(refreshRpcStatus, 650);
+            toast("Synced Discord RPC");
+          },
+        }, "Test / Sync");
+        return el("div", { className: "dih-panel dih-row", style: { gridColumn: "1 / -1", flexWrap: "wrap", gap: "10px" } }, [
+          el("div", { style: { minWidth: "0", flex: "1 1 260px" } }, [
+            el("div", { className: "dih-row-title" }, "Discord RPC Application ID & Live Pipe Status"),
+            rpcStatus,
+          ]),
+          el("div", { style: { display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
+            rpcIdInp,
+            saveRpcBtn,
+          ]),
+        ]);
+      })(),
       makeToggleCard("User-Agent Stealth", "Strips wrapper signatures (restart required)", "window.userAgentStealth"),
     ]);
 
@@ -2245,6 +2296,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
   }
 
   function switchTab(tabId) {
+    closeDarkSelects?.();
     activeTab = tabId;
     for (const [id, btn] of Object.entries(navButtons)) {
       btn.classList.toggle("active", id === tabId);
@@ -2304,6 +2356,7 @@ DIH_NS.createCommandCenter = function createCommandCenter({
 
   // Closed = visibility:hidden (not display:none) so the built panel keeps its layout and reopens instantly.
   function close() {
+    closeDarkSelects?.();
     backdrop.classList.add("dih-closed");
     telemetryHud?.setMenuOpen?.(false);
   }

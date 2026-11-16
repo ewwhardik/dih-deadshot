@@ -88,6 +88,8 @@ const api = {
 
   // Discord RPC
   updateDiscordState: (state) => ipcRenderer.send("dih:discord-state", state),
+  getDiscordStatus: () => ipcRenderer.invoke("dih:discord-status"),
+  reconnectDiscordRpc: () => ipcRenderer.invoke("dih:discord-reconnect"),
 
   // Main -> Renderer push subscriptions
   onSettingsChanged: (callback) => {

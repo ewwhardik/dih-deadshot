@@ -164,6 +164,7 @@ const DEFAULT_SETTINGS = {
     adblockerEnabled: true,
     discordRpcEnabled: true,
     discordPrivacyMode: false,
+    discordClientId: "1571744646219169873",
     userAgentStealth: true,
   },
   theme: {

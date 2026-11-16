@@ -84,6 +84,8 @@ DIH_NS.utils = (function () {
       connectOpenRgb: (host, port) => rpc("connectOpenRgb", { host, port }),
       corsairUpdateTelemetry: (patch) => fire("corsairUpdateTelemetry", patch),
       updateDiscordState: (state) => fire("updateDiscordState", state),
+      getDiscordStatus: () => rpc("getDiscordStatus"),
+      reconnectDiscordRpc: () => rpc("reconnectDiscordRpc"),
       onSettingsChanged: (cb) => {
         settingsListeners.add(cb);
         return () => settingsListeners.delete(cb);
@@ -424,6 +426,192 @@ DIH_NS.utils = (function () {
     };
   }
 
+  let activeDarkMenuCleanup = null;
+
+  function closeDarkSelects() {
+    if (typeof activeDarkMenuCleanup === "function") {
+      const fn = activeDarkMenuCleanup;
+      activeDarkMenuCleanup = null;
+      fn();
+    }
+  }
+
+  /**
+   * Custom Obsidian-dark dropdown menu that replaces OS native <select> popups
+   * (fixing Windows WebView2 white-on-white <option> contrast and clipped borders).
+   */
+  function createDarkSelect(shadowRoot, options = [], opts = {}) {
+    const {
+      value = "",
+      className = "dih-select",
+      style = null,
+      asNumber = false,
+      onChange = null,
+    } = opts || {};
+
+    let items = (options || []).map((o) => ({
+      value: String(o?.value ?? ""),
+      label: String(o?.label ?? o?.value ?? ""),
+    }));
+
+    const labelEl = el("span", { className: "dih-csel-label" }, "");
+    const chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    chev.setAttribute("width", "12");
+    chev.setAttribute("height", "12");
+    chev.setAttribute("viewBox", "0 0 24 24");
+    chev.setAttribute("fill", "none");
+    chev.setAttribute("stroke", "currentColor");
+    chev.setAttribute("stroke-width", "2.2");
+    chev.setAttribute("stroke-linecap", "round");
+    chev.setAttribute("stroke-linejoin", "round");
+    chev.setAttribute("class", "dih-csel-chev");
+    chev.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
+
+    const btn = el("button", {
+      type: "button",
+      className: `${className} dih-csel-btn`,
+      "aria-haspopup": "listbox",
+      "aria-expanded": "false",
+    }, [labelEl, chev]);
+
+    if (style && typeof style === "object") Object.assign(btn.style, style);
+
+    let currentValue = "";
+    const resolveMatch = (raw) => {
+      const s = String(raw ?? "");
+      let found = items.find((o) => o.value === s);
+      if (!found && asNumber && s !== "" && !Number.isNaN(Number(s))) {
+        const n = Number(s);
+        found = items.find((o) => o.value !== "" && !Number.isNaN(Number(o.value)) && Number(o.value) === n);
+      }
+      if (!found && s === "") {
+        found = items.find((o) => o.value === "") || items[0] || null;
+      }
+      return found;
+    };
+
+    const syncLabel = (raw) => {
+      const matched = resolveMatch(raw);
+      currentValue = matched ? matched.value : String(raw ?? "");
+      labelEl.textContent = matched
+        ? matched.label
+        : currentValue !== ""
+          ? (asNumber ? `${currentValue}x` : currentValue)
+          : items[0]?.label || "Select...";
+    };
+
+    Object.defineProperty(btn, "value", {
+      configurable: true,
+      get() {
+        return currentValue;
+      },
+      set(v) {
+        syncLabel(v);
+      },
+    });
+
+    btn.setOptions = (nextOpts, nextVal) => {
+      items = (nextOpts || []).map((o) => ({
+        value: String(o?.value ?? ""),
+        label: String(o?.label ?? o?.value ?? ""),
+      }));
+      syncLabel(nextVal !== undefined ? nextVal : currentValue);
+    };
+
+    syncLabel(value);
+
+    btn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const wasOpen = btn.classList.contains("open");
+      closeDarkSelects();
+      if (wasOpen) return;
+
+      const hostTarget = shadowRoot || btn.getRootNode() || document.body;
+      const menu = el("div", { className: "dih-csel-menu", role: "listbox" });
+      for (const opt of items) {
+        const isSel = opt.value === currentValue;
+        const optBtn = el("button", {
+          type: "button",
+          role: "option",
+          "aria-selected": String(isSel),
+          className: `dih-csel-opt${isSel ? " active" : ""}`,
+          onClick: (e) => {
+            e.stopPropagation();
+            const changed = currentValue !== opt.value;
+            syncLabel(opt.value);
+            closeDarkSelects();
+            if (changed) {
+              btn.dispatchEvent(new Event("change", { bubbles: true }));
+              if (typeof onChange === "function") onChange(opt.value);
+            }
+          },
+        }, [
+          el("span", { className: "dih-csel-opt-txt" }, opt.label),
+          isSel ? el("span", { className: "dih-csel-check" }, "✓") : null,
+        ]);
+        menu.appendChild(optBtn);
+      }
+
+      const rect = btn.getBoundingClientRect();
+      const estH = Math.min(248, items.length * 32 + 10);
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+      const openUp = spaceBelow < estH && rect.top > estH;
+      const topPx = openUp
+        ? Math.max(8, rect.top - estH - 4)
+        : Math.min(window.innerHeight - estH - 8, rect.bottom + 4);
+      const widthPx = Math.max(rect.width, 165);
+      const leftPx = Math.max(8, Math.min(rect.left, window.innerWidth - widthPx - 8));
+
+      menu.style.left = `${Math.round(leftPx)}px`;
+      menu.style.top = `${Math.round(topPx)}px`;
+      menu.style.minWidth = `${Math.round(rect.width)}px`;
+      menu.style.maxWidth = `${Math.min(340, window.innerWidth - 16)}px`;
+
+      btn.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
+      hostTarget.appendChild(menu);
+
+      const onOutside = (e) => {
+        const path = typeof e.composedPath === "function" ? e.composedPath() : [];
+        if (path.includes(menu) || path.includes(btn)) return;
+        closeDarkSelects();
+      };
+      const onScroll = (e) => {
+        const path = typeof e.composedPath === "function" ? e.composedPath() : [];
+        if (path.includes(menu)) return;
+        closeDarkSelects();
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          closeDarkSelects();
+          btn.focus();
+        }
+      };
+
+      activeDarkMenuCleanup = () => {
+        btn.classList.remove("open");
+        btn.setAttribute("aria-expanded", "false");
+        menu.remove();
+        window.removeEventListener("pointerdown", onOutside, true);
+        window.removeEventListener("scroll", onScroll, true);
+        window.removeEventListener("resize", closeDarkSelects);
+        window.removeEventListener("keydown", onKey, true);
+      };
+
+      setTimeout(() => {
+        if (!menu.isConnected) return;
+        window.addEventListener("pointerdown", onOutside, true);
+        window.addEventListener("scroll", onScroll, true);
+        window.addEventListener("resize", closeDarkSelects);
+        window.addEventListener("keydown", onKey, true);
+      }, 0);
+    });
+
+    return btn;
+  }
+
   function showToast(toastStack, text) {
     if (!toastStack) return;
     const item = el("div", { className: "dih-card dih-toast" }, [
@@ -452,6 +640,8 @@ DIH_NS.utils = (function () {
     writeDeadshotSetting,
     encodeCrosshairCode,
     decodeCrosshairCode,
+    createDarkSelect,
+    closeDarkSelects,
     showToast,
   };
 })();

@@ -682,10 +682,11 @@ function applyRuntimeSettingSideEffects(dotPath, value) {
     const ms = Math.max(1000, Math.min(15000, Number(value) || 3500));
     systemMetrics.startPingLoop(ms);
   }
-  if (dotPath === "window.discordRpcEnabled" || dotPath === "window.discordPrivacyMode") {
+  if (dotPath === "window.discordRpcEnabled" || dotPath === "window.discordPrivacyMode" || dotPath === "window.discordClientId") {
     discordRpc.setConfig({
       enabled: settingsStore.settings.window?.discordRpcEnabled,
       privacyMode: settingsStore.settings.window?.discordPrivacyMode,
+      clientId: settingsStore.settings.window?.discordClientId,
     });
   }
   if (dotPath === "theme.accent" && settingsStore.settings.corsair?.syncWithTheme) {
@@ -721,6 +722,7 @@ function setupIpcHandlers() {
     discordRpc.setConfig({
       enabled: updated.window?.discordRpcEnabled,
       privacyMode: updated.window?.discordPrivacyMode,
+      clientId: updated.window?.discordClientId,
     });
     broadcastSettings(updated);
     return updated;
@@ -1070,6 +1072,9 @@ function setupIpcHandlers() {
   ipcMain.on("dih:discord-state", (_ev, state) => {
     discordRpc.updateActivity(state);
   });
+
+  ipcMain.handle("dih:discord-status", () => discordRpc.getStatus());
+  ipcMain.handle("dih:discord-reconnect", () => discordRpc.reconnect());
 }
 
 app.on("second-instance", () => {
@@ -1101,6 +1106,7 @@ app.whenReady().then(async () => {
   discordRpc.setConfig({
     enabled: settingsStore.settings.window?.discordRpcEnabled,
     privacyMode: settingsStore.settings.window?.discordPrivacyMode,
+    clientId: settingsStore.settings.window?.discordClientId,
   });
 
   if (settingsStore.settings.performance?.antiBackgroundThrottle) {

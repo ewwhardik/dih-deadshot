@@ -1,7 +1,7 @@
-// Synchronized catalog bundle for Dih Client v0.4.0 by ewwhardik.
+// Synchronized catalog bundle for Dih Client v0.4.1 by ewwhardik.
 window.DIH_DOCS_DATA = {
-  "version": "0.4.0",
-  "generatedAt": "2026-11-15T19:05:45.260Z",
+  "version": "0.4.1",
+  "generatedAt": "2026-11-16T04:43:04.533Z",
   "featureCount": 201,
   "categories": [
     {

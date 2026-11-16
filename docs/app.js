@@ -1,7 +1,7 @@
 /* Dih Client Interactive GitHub Pages Showcase */
 (function () {
   const DATA = window.DIH_DOCS_DATA || {
-    version: "0.4.0",
+    version: "0.4.1",
     featureCount: 201,
     categories: [],
     features: [],

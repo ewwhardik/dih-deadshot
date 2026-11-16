@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dih Client — Uncapped High-FPS Deadshot.io Client (Windows, macOS & Linux)</title>
-  <meta name="description" content="Dih Client v0.4: Sub-1MB Single-Binary Rust+Win32 & cross-platform Deadshot.io client with fast Zero-Blur Titanium Grey-White Bento UI, Royal Flush GLSL skin baker, Corsair RGB, zero-leak adblocker, Minimal/Complete HUD & uncapped FPS." />
+  <meta name="description" content="Dih Client v0.4.1: Sub-1MB Single-Binary Rust+Win32 & cross-platform Deadshot.io client with fast Zero-Blur Titanium Grey-White Bento UI, dark dropdowns, Discord Rich Presence buttons, Royal Flush GLSL skin baker, Corsair RGB, zero-leak adblocker, Minimal/Complete HUD & uncapped FPS." />
   <link rel="icon" type="image/png" href="assets/dih-icon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -15,7 +15,7 @@
         <img src="assets/dih-icon.png" alt="Dih Icon" width="28" height="28" class="brand-icon" />
         <div class="brand-text">
           <span class="brand-name">DIH CLIENT</span>
-          <span class="brand-tag mono" id="nav-version">v0.4.0 • 201 FEATURES</span>
+          <span class="brand-tag mono" id="nav-version">v0.4.1 • 201 FEATURES</span>
         </div>
       </a>
       <nav class="nav-links">
@@ -26,7 +26,7 @@
         <a href="#playground">Previews</a>
         <a href="#rgb-skins">RGB &amp; Skins</a>
         <a href="#features">Features</a>
-        <a href="#downloads" class="btn primary small">Download v0.4</a>
+        <a href="#downloads" class="btn primary small">Download v0.4.1</a>
       </nav>
     </div>
   </header>
@@ -36,21 +36,21 @@
     <section class="hero container">
       <div class="hero-copy">
         <div class="pill mono">SUB-1 MB SINGLE-FILE BINARY • NATIVE WIN32 + MACOS &amp; LINUX</div>
-        <h1>Uncapped FPS.<br /><span class="accent-grad">755.5 KB Single-File Shell.</span></h1>
+        <h1>Uncapped FPS.<br /><span class="accent-grad">779.5 KB Single-File Shell.</span></h1>
         <p class="lead">
           Zero-blur Titanium grey-white Bento UI meets a <strong>sub-1 MB</strong> single-executable Rust + C + Win32 engine
-          with zero loose code files, zero-leak Venatus/Atmtd adblocker, Minimal &amp; Complete telemetry (<code>F6</code>), F1–F9 HUD hide keys,
+          with zero loose code files, zero-leak Venatus/Atmtd adblocker, live Discord Rich Presence with action buttons, Minimal &amp; Complete telemetry (<code>F6</code>), F1–F9 HUD hide keys,
           Auto-Join chat, Royal Flush GLSL shader skin packs, and <strong><span id="hero-feat-count">201</span> wired features</strong>
           (3D Studio &amp; Aim Trainer <em>Coming Soon</em>) by <span class="mono">ewwhardik</span>.
         </p>
         <div class="hero-cta">
-          <a href="#downloads" class="btn primary">Download v0.4 (Win / Mac / Linux)</a>
+          <a href="#downloads" class="btn primary">Download v0.4.1 (Win / Mac / Linux)</a>
           <a href="#guide" class="btn">Play Guide &amp; Shortcuts</a>
-          <a href="#ui-showcase" class="btn">Preview v0.4 Glass UI</a>
+          <a href="#ui-showcase" class="btn">Preview v0.4.1 Glass UI</a>
           <a href="https://github.com/ewwhardik/dih-deadshot" target="_blank" rel="noopener" class="btn">GitHub Repo</a>
         </div>
         <div class="hero-stats mono">
-          <div class="stat-pill"><span class="k">SINGLE EXE SIZE</span><strong>755.5 KB (&lt;1MB)</strong></div>
+          <div class="stat-pill"><span class="k">SINGLE EXE SIZE</span><strong>779.5 KB (&lt;1MB)</strong></div>
           <div class="stat-pill"><span class="k">CHROME (22 PROCS)</span><strong>1,652.3 MB</strong></div>
           <div class="stat-pill"><span class="k">WIRED FEATURES</span><strong id="hero-stat-feats">201+</strong></div>
           <div class="stat-pill"><span class="k">PLATFORMS</span><strong>WIN • MAC • LINUX</strong></div>
@@ -93,10 +93,10 @@
       </div>
     </section>
 
-    <!-- New v0.4 Live Titanium Glass UI Showcase -->
+    <!-- New v0.4.1 Live Titanium Glass UI Showcase -->
     <section id="ui-showcase" class="section container">
       <div class="section-head">
-        <span class="kicker mono">DIH v0.4 OVERHAUL • TITANIUM GREY-WHITE GLASS</span>
+        <span class="kicker mono">DIH v0.4.1 OVERHAUL • TITANIUM GREY-WHITE GLASS</span>
         <h2>Fast Zero-Blur Bento UI &amp; Royal Flush <code>.frag</code> Shaders</h2>
         <p class="sub">
           Tuned for instant in-place toggling and high FPS with Titanium grey-white glass cards, sparklines, concentric GPU gauges,
@@ -138,9 +138,9 @@
           <span class="guide-step mono">STEP 01 • INSTALL &amp; LAUNCH</span>
           <h3>Platform Setup</h3>
           <ul class="guide-list">
-            <li><strong>Windows (755.5 KB Native):</strong> Extract <code>Dih-Client-v0.4-win-x64.zip</code> keeping <code>Dih.exe</code> and <code>WebView2Loader.dll</code> in the same folder, then run <code>Dih.exe</code> (uses built-in Windows 10/11 Edge WebView2).</li>
+            <li><strong>Windows (779.5 KB Native):</strong> Extract <code>Dih-Client-v0.4.1-win-x64.zip</code> keeping <code>Dih.exe</code> and <code>WebView2Loader.dll</code> in the same folder, then run <code>Dih.exe</code> (uses built-in Windows 10/11 Edge WebView2).</li>
             <li><strong>macOS (ARM64 / x64):</strong> Unzip into Applications. If macOS Gatekeeper warns on unsigned bundles, run <code>xattr -cr /Applications/Dih.app</code> once in Terminal.</li>
-            <li><strong>Linux (x64):</strong> Extract <code>tar -xzf Dih-Client-0.4.0-linux-x64.tar.gz</code> and launch <code>./dih-client</code> cleanly with executable bits intact.</li>
+            <li><strong>Linux (x64):</strong> Extract <code>tar -xzf Dih-Client-0.4.1-linux-x64.tar.gz</code> and launch <code>./dih-client</code> cleanly with executable bits intact.</li>
           </ul>
         </div>
 
@@ -322,10 +322,10 @@
       <div class="bench-proof card" style="margin-top: 18px;">
         <div class="proof-top">
           <div>
-            <h3>Clean Security Posture &amp; VirusTotal / Defender Hardening (v0.4)</h3>
-            <p class="muted">Single-file <code>773,632 B</code> (755.5 KB) PE32+ executable with <code>asInvoker</code> Win32 <code>RT_MANIFEST</code>, Windows 10/11 compatibility GUIDs, zero <code>PROCESS_VM_READ</code>, zero UPX packing, <code>0</code> Windows Defender threats, and verified <code>0 / 13</code> Jotti multi-engine scan on the initial v0.4.0 build (<code>998,912 B</code>, MD5 <code>c7581cfe07c344200b90146da8d51597</code>).</p>
+            <h3>Clean Security Posture &amp; VirusTotal / Defender Hardening (v0.4.1)</h3>
+            <p class="muted">Single-file <code>798,208 B</code> (779.5 KB) PE32+ executable with <code>asInvoker</code> Win32 <code>RT_MANIFEST</code>, Windows 10/11 compatibility GUIDs, zero <code>PROCESS_VM_READ</code>, zero UPX packing, <code>0</code> Windows Defender threats, and verified <code>0 / 13</code> Jotti multi-engine scan on the initial v0.4.0 build (<code>998,912 B</code>, MD5 <code>c7581cfe07c344200b90146da8d51597</code>).</p>
           </div>
-          <span class="badge accent mono">755.5 KB • CLEAN PE32+</span>
+          <span class="badge accent mono">779.5 KB • CLEAN PE32+</span>
         </div>
         <div class="proof-img-wrap">
           <img src="assets/jotti-scan-clean.png" alt="Jotti Malware Scan Report for Dih.exe: 0 of 13 scanners reported malware" />
@@ -337,7 +337,7 @@
           <thead>
             <tr>
               <th>Capability / Architecture</th>
-              <th class="col-dih">Dih Client v0.4</th>
+              <th class="col-dih">Dih Client v0.4.1</th>
               <th>Typhoonz0 / Omniverse</th>
               <th>Google Chrome Browser</th>
             </tr>
@@ -345,7 +345,7 @@
           <tbody>
             <tr>
               <td>Distributable Size &amp; Code Packaging</td>
-              <td class="col-dih"><strong>755.5 KB (<code>&lt; 1 MB</code>) single <code>Dih.exe</code></strong> — zero loose JS/HTML files visible</td>
+              <td class="col-dih"><strong>779.5 KB (<code>&lt; 1 MB</code>) single <code>Dih.exe</code></strong> — zero loose JS/HTML files visible</td>
               <td>~120+ MB unpacked Electron resources</td>
               <td>~350+ MB multi-process browser install</td>
             </tr>
@@ -620,7 +620,7 @@
     <!-- Section 6: Downloads (Windows, macOS, Linux) -->
     <section id="downloads" class="section container">
       <div class="section-head">
-        <span class="kicker mono">CROSS-PLATFORM RELEASE • v0.4.0</span>
+        <span class="kicker mono">CROSS-PLATFORM RELEASE • v0.4.1</span>
         <h2>Download Dih Client for Windows, macOS &amp; Linux</h2>
       </div>
 
@@ -628,12 +628,12 @@
         <div class="card dl-card">
           <div class="os-badge mono">WINDOWS x64 • SUB-1 MB FLAGSHIP</div>
           <h3>Native Rust + Win32 + WebView2</h3>
-          <p class="muted">755.5 KB (<code>773,632 B</code>) single-binary <code>Dih.exe</code> with zero loose code files, Win32 <code>asInvoker</code> manifest, EcoQoS bypass &amp; WebView2.</p>
+          <p class="muted">779.5 KB (<code>798,208 B</code>) single-binary <code>Dih.exe</code> with zero loose code files, Win32 <code>asInvoker</code> manifest, EcoQoS bypass &amp; native Discord RPC.</p>
           <ul class="dl-list mono">
-            <li>Dih-Client-v0.4-win-x64.zip</li>
-            <li>Dih-Client-v0.4.0-electron-win-x64.zip</li>
+            <li>Dih-Client-v0.4.1-win-x64.zip</li>
+            <li>Dih-Client-v0.4.1-electron-win-x64.zip</li>
           </ul>
-          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4" target="_blank" rel="noopener" class="btn primary full">Download Windows v0.4</a>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4.1" target="_blank" rel="noopener" class="btn primary full">Download Windows v0.4.1</a>
         </div>
 
         <div class="card dl-card">
@@ -641,10 +641,10 @@
           <h3>Dih Client for macOS (.zip / App)</h3>
           <p class="muted">Metal GPU ANGLE acceleration, ProMotion 120Hz detection, OpenRGB &amp; Royal Flush .frag Shader Baker (3D Studio &amp; Aim Trainer Coming Soon).</p>
           <ul class="dl-list mono">
-            <li>Dih-Client-0.4.0-mac-arm64.zip</li>
-            <li>Dih-Client-0.4.0-mac-x64.zip</li>
+            <li>Dih-Client-0.4.1-mac-arm64.zip</li>
+            <li>Dih-Client-0.4.1-mac-x64.zip</li>
           </ul>
-          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4" target="_blank" rel="noopener" class="btn full">Download macOS v0.4</a>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4.1" target="_blank" rel="noopener" class="btn full">Download macOS v0.4.1</a>
         </div>
 
         <div class="card dl-card">
@@ -652,10 +652,10 @@
           <h3>Dih Client for Linux (.tar.gz)</h3>
           <p class="muted">Vulkan &amp; OpenGL backend support, xrandr/lspci telemetry, OpenRGB / ckb-next Corsair sync &amp; full overlay HUD.</p>
           <ul class="dl-list mono">
-            <li>Dih-Client-0.4.0-linux-x64.tar.gz</li>
-            <li>Dih-Client-0.4.0-linux-x64.zip</li>
+            <li>Dih-Client-0.4.1-linux-x64.tar.gz</li>
+            <li>Dih-Client-0.4.1-linux-x64.zip</li>
           </ul>
-          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4" target="_blank" rel="noopener" class="btn full">Download Linux v0.4</a>
+          <a href="https://github.com/ewwhardik/dih-deadshot/releases/tag/v0.4.1" target="_blank" rel="noopener" class="btn full">Download Linux v0.4.1</a>
         </div>
       </div>
     </section>
@@ -665,7 +665,7 @@
     <div class="footer-inner">
       <div class="brand">
         <img src="assets/dih-icon.png" alt="Dih Icon" width="24" height="24" />
-        <span><strong>Dih Client v0.4</strong> — Proprietary License © 2026 <strong>ewwhardik</strong></span>
+        <span><strong>Dih Client v0.4.1</strong> — Proprietary License © 2026 <strong>ewwhardik</strong></span>
       </div>
       <div class="footer-links mono">
         <a href="https://github.com/ewwhardik/dih-deadshot" target="_blank" rel="noopener">GitHub: ewwhardik/dih-deadshot</a>

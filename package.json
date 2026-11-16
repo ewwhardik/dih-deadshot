@@ -1,13 +1,13 @@
 {
   "name": "dih-client",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": "ewwhardik (GitHub & Discord: ewwhardik)",
   "homepage": "https://ewwhardik.github.io/dih-deadshot/",
   "repository": {
     "type": "git",
     "url": "https://github.com/ewwhardik/dih-deadshot.git"
   },
-  "description": "Dih v0.4 — Sub-1MB Native Deadshot.io Client & Cross-Platform Electron Suite with Zero-Ad Blocker, Minimal/Complete Telemetry, Auto-Chat, 7-Gun .frag/.webp Skin Swapper & Corsair RGB (3D Studio & Aim Trainer Coming Soon)",
+  "description": "Dih v0.4.1 — Sub-1MB Native Deadshot.io Client & Cross-Platform Electron Suite with Zero-Ad Blocker, Dark Bento Dropdowns, Discord RPC Buttons, Minimal/Complete Telemetry, Auto-Chat, 7-Gun .frag/.webp Skin Swapper & Corsair RGB",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",

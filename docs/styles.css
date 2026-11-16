@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg: #0a0b0e;
   --surface: #12141a;
   --elevated: #1a1d24;
@@ -381,11 +382,18 @@ body {
 .ctrl-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: var(--muted); }
 .ctrl-grid input[type="range"] { accent-color: var(--accent); width: 100%; }
 .ctrl-grid select, .compact-select {
+  color-scheme: dark;
   background: rgba(0, 0, 0, 0.4);
+  background-color: #15171d;
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 8px;
+}
+
+select option {
+  background-color: #15171d;
+  color: #f5f7fa;
 }
 .share-box { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
 .share-box .k { font-size: 0.68rem; color: var(--muted); }

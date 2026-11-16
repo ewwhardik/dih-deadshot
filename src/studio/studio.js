@@ -280,7 +280,7 @@ function renderExplorer(filter = "") {
     overviewCard.innerHTML = `
       <div class="group-label">Application Overview &amp; Developer Credits</div>
       <div class="exp-list">
-        <div class="exp-item"><span>Client Name &amp; Build</span><span class="mono muted">Dih Client v0.4 (${api?.isNativeHost ? "Native Rust + Win32 + WebView2" : "Electron"})</span></div>
+        <div class="exp-item"><span>Client Name &amp; Build</span><span class="mono muted">Dih Client v0.4.1 (${api?.isNativeHost ? "Native Rust + Win32 + WebView2" : "Electron"})</span></div>
         <div class="exp-item"><span>Developer GitHub</span><span class="mono" style="cursor:pointer;text-decoration:underline;" id="expGhLink">github.com/ewwhardik</span></div>
         <div class="exp-item"><span>Developer Discord</span><span class="mono" style="cursor:pointer;" id="expDcLink">ewwhardik (Click to Copy)</span></div>
         <div class="exp-item"><span>Core Subsystems</span><span class="mono muted">Uncapped FPS Telemetry • 2D .frag Shader Baker • Corsair/OpenRGB HID • ${catalog.FEATURE_REGISTRY?.length || 201} Modules (3D Studio &amp; Aim Trainer Coming Soon)</span></div>

@@ -3,7 +3,7 @@
  */
 
 DIH_NS.createLeaderboardModal = function createLeaderboardModal(shadowRoot) {
-  const { el } = DIH_NS.utils;
+  const { el, createDarkSelect, closeDarkSelects } = DIH_NS.utils;
 
   const backdrop = el("div", { className: "dih-backdrop dih-lb-backdrop dih-hidden" });
   const modal = el("div", {
@@ -22,15 +22,15 @@ DIH_NS.createLeaderboardModal = function createLeaderboardModal(shadowRoot) {
     placeholder: "Player username to find rank...",
     style: { flex: "1" },
   });
-  const catSelect = el("select", { className: "dih-select" }, [
-    el("option", { value: "daily" }, "Daily"),
-    el("option", { value: "weekly" }, "Weekly"),
-    el("option", { value: "all" }, "All-Time"),
-  ]);
-  const statSelect = el("select", { className: "dih-select" }, [
-    el("option", { value: "kills" }, "Kills"),
-    el("option", { value: "wins" }, "Wins"),
-  ]);
+  const catSelect = createDarkSelect(shadowRoot, [
+    { value: "daily", label: "Daily" },
+    { value: "weekly", label: "Weekly" },
+    { value: "all", label: "All-Time" },
+  ], { value: "daily" });
+  const statSelect = createDarkSelect(shadowRoot, [
+    { value: "kills", label: "Kills" },
+    { value: "wins", label: "Wins" },
+  ], { value: "kills" });
   const refreshBtn = el("button", { className: "dih-btn primary" }, "Fetch");
   const closeBtn = el("button", { className: "dih-btn" }, "Close");
 
@@ -130,9 +130,15 @@ DIH_NS.createLeaderboardModal = function createLeaderboardModal(shadowRoot) {
   statSelect.addEventListener("change", renderTable);
   searchInput.addEventListener("input", renderTable);
   refreshBtn.addEventListener("click", load);
-  closeBtn.addEventListener("click", () => backdrop.classList.add("dih-hidden"));
+  closeBtn.addEventListener("click", () => {
+    closeDarkSelects?.();
+    backdrop.classList.add("dih-hidden");
+  });
   backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) backdrop.classList.add("dih-hidden");
+    if (e.target === backdrop) {
+      closeDarkSelects?.();
+      backdrop.classList.add("dih-hidden");
+    }
   });
 
   return {
@@ -141,6 +147,9 @@ DIH_NS.createLeaderboardModal = function createLeaderboardModal(shadowRoot) {
       if (!cachedData) load();
       else renderTable();
     },
-    close: () => backdrop.classList.add("dih-hidden"),
+    close: () => {
+      closeDarkSelects?.();
+      backdrop.classList.add("dih-hidden");
+    },
   };
 };

@@ -305,9 +305,9 @@ fn build_version_resource() -> Vec<u8> {
     push_u32(&mut fixed, 0xFEEF04BD); // dwSignature
     push_u32(&mut fixed, 0x00010000); // dwStrucVersion
     push_u32(&mut fixed, 0x00000004); // dwFileVersionMS (0.4)
-    push_u32(&mut fixed, 0x00000000); // dwFileVersionLS (0.0)
+    push_u32(&mut fixed, 0x00010000); // dwFileVersionLS (0.1)
     push_u32(&mut fixed, 0x00000004); // dwProductVersionMS (0.4)
-    push_u32(&mut fixed, 0x00000000); // dwProductVersionLS (0.0)
+    push_u32(&mut fixed, 0x00010000); // dwProductVersionLS (0.1)
     push_u32(&mut fixed, 0x0000003F); // dwFileFlagsMask
     push_u32(&mut fixed, 0);          // dwFileFlags
     push_u32(&mut fixed, 0x00040004); // dwFileOS (VOS_NT_WINDOWS32)
@@ -319,12 +319,12 @@ fn build_version_resource() -> Vec<u8> {
     let pairs = [
         ("CompanyName", "ewwhardik"),
         ("FileDescription", "Dih - Native Uncapped Deadshot.io Client"),
-        ("FileVersion", "0.4.0.0"),
+        ("FileVersion", "0.4.1.0"),
         ("InternalName", "Dih"),
         ("LegalCopyright", "Copyright (c) 2026 ewwhardik. All Rights Reserved."),
         ("OriginalFilename", "Dih.exe"),
         ("ProductName", "Dih Client"),
-        ("ProductVersion", "0.4.0.0"),
+        ("ProductVersion", "0.4.1.0"),
         ("Comments", "Minimalist Sub-1MB High-FPS Deadshot.io Client | GitHub: ewwhardik | Discord: ewwhardik"),
     ];
 
@@ -390,7 +390,7 @@ fn compile_win32_resources(repo_root: &Path, out_dir: &Path) {
 
     let manifest = br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="0.4.0.0" processorArchitecture="amd64" name="ewwhardik.DihClient" type="win32"/>
+  <assemblyIdentity version="0.4.1.0" processorArchitecture="amd64" name="ewwhardik.DihClient" type="win32"/>
   <description>Dih Uncapped Deadshot.io Client</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
